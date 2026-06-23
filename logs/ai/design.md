@@ -25,7 +25,7 @@ https://www.figma.com/design/JWqP9VJGxQyNK2lFnYAnLb/%E6%9D%B1%E4%BA%AC%E9%83%BD%
 
 ## 添付素材
 
-![PC-トップページの画像](./images/20260619pc-toppage.png)
+![PC-トップページの画像](./images/all/20260619/PC-トップページ.png)
 
 ## 回答
 
@@ -379,7 +379,7 @@ TB ブレイクポイントの方針決定
 
 ## 添付素材
 
-![PC-トップページの画像](./images/20260619pc-toppage.png)
+![PC-トップページの画像](./images/all/20260619/PC-トップページ.png)
 
 ## 回答
 
@@ -431,7 +431,7 @@ TB ブレイクポイントの方針決定
 
 ## 添付素材
 
-![PC-トップページの画像](./images/20260619pc-toppage.png)
+![PC-トップページの画像](./images/all/20260619/PC-トップページ.png)
 
 ## 回答
 
