@@ -1,5 +1,48 @@
 # 「東京都心タクマップ」関連ドキュメント
 
+新人のタクシー運転手にとって役立つ地理知識を学習できるウェブアプリケーション「東京都心タクマップ」の仕様・設計・開発過程をまとめるリポジトリです。
+
+既存のWordPressサイト「[東京都心タクマップ](https://tokyotaximap.com)」を、Next.jsを使用したウェブアプリケーションへリニューアルします。
+
+## ドキュメント
+
+### 要件
+
+- [ユーザーと利用目的](./docs/requirements/users.md)
+- [機能要件](./docs/requirements/features.md)
+- [コンテンツ構造](./docs/requirements/content.md)
+
+### 設計
+
+- [UI・UX設計](./docs/design/ui-ux.md)
+- [コンテンツモデル・編集方針](./docs/design/content-model.md)
+- [アプリケーション技術設計](./docs/design/architecture.md)
+- [インフラ設計](./docs/design/infrastructure.md)
+
+### 移行・運用
+
+- [WordPressからの移行](./docs/operations/migration.md)
+- [コンテンツの編集・公開](./docs/operations/publishing.md)
+
+### 意思決定記録
+
+- [ADR 0001: Next.jsを使用する](./docs/decisions/0001-use-nextjs.md)
+
+## 開発・検討ログ
+
+- [`logs/ai/project.md`](./logs/ai/project.md): プロジェクトに関する検討ログ
+- [`logs/ai/design.md`](./logs/ai/design.md): デザインに関する検討ログ
+- [`logs/ai/images/`](./logs/ai/images/): 画面案などの画像
+
+## 現在の主な未決定事項
+
+- CMSの採否と製品選定
+- 全文検索とサジェストの実現方式
+- Markdown記事のメタデータ構造
+- ピンの位置情報の管理方法
+- ホスティング・デプロイ・監視
+# 「東京都心タクマップ」関連ドキュメント
+
 新人のタクシー運転手にとって役立つ地理知識を学習できるウェブアプリケーション「東京都心タクマップ」の開発の過程を記したドキュメントです。
 
 ## プロジェクトについて
