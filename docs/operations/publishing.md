@@ -15,6 +15,8 @@
 ## front matter の運用
 
 - 必須キー・条件付きキーは [コンテンツモデル・編集方針](../design/content-model.md#メタデータfront-matter) を参照。
+- `publishedAt` / `updatedAt` は全記事で必須（`YYYY-MM-DD`）。表示の正は front matter とし、Git のコミット日は使わない。
+- 本文を実質更新したら `updatedAt` を進める。
 - 値がない配列項目は空配列で明示する（`keywords: []`, `tags: []`, `city: []`）。
 - `pinmap` は全記事で `true` / `false` を明示する。
 - YouTube 動画がない記事は `youtube` キーを省略する。
@@ -24,4 +26,5 @@
 - Markdown 記事の作成・レビュー手順
 - 公開承認の有無
 - 公開・更新手順
-- 編集ルールの詳細
+- サンプル記事のファイル配置
+- 地図埋め込みの方式
