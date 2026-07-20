@@ -1048,3 +1048,43 @@ categoryのenumいきましょう。
 
 ---
 
+## 日時:2026-07-21 00:45 JST
+
+```
+サンプル記事のファイル配置を決める。
+→ 案 A: docs/design/samples/articles/{slug}.md（設計）
+→ 実装リポは content/articles/{slug}.md（将来）
+→ カテゴリ別フォルダは使わない
+```
+
+## 回答
+
+**2026-07-21 00:45 JST**
+
+---
+
+### 決定
+
+- 設計サンプル: `docs/design/samples/articles/{slug}.md`
+- 実装リポジトリ（将来）: `content/articles/{slug}.md`
+- サムネイル: `public/images/articles/`（`thumbnail` と対応）
+- slug フラット。カテゴリ別フォルダは使わない
+- 第 1 サンプル: `docs/design/samples/articles/the-capitol-hotel-tokyu.md`
+
+### `docs/` への反映
+
+- サンプルファイル作成
+- `docs/design/content-model.md` — ファイル配置
+- `docs/engineering/architecture.md` — ファイル配置・次のステップ・未決定
+- `docs/operations/publishing.md` — ファイル配置への参照
+- `README.md` — サンプルリンク・未決定から配置を削除
+
+### 未決定（残）
+
+- `tags` の enum リスト
+- ホスティング・デプロイ・監視
+- ミニ単語帳のデータ形式と Pagefind への載せ方
+- 地図埋め込みの方式
+
+---
+

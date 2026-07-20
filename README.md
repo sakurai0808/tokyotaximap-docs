@@ -18,6 +18,7 @@
 
 - [UI・UX 設計](./docs/design/ui-ux.md)
 - [コンテンツモデル・編集方針](./docs/design/content-model.md)
+- 設計サンプル: [ザ・キャピトルホテル東急](./docs/design/samples/articles/the-capitol-hotel-tokyu.md)
 
 ### エンジニアリング
 
@@ -46,5 +47,4 @@
 - `tags` の enum リスト
 - ホスティング・デプロイ・監視
 - ミニ単語帳のデータ形式と Pagefind への載せ方
-- サンプル記事のファイル配置
 - 地図埋め込みの方式
