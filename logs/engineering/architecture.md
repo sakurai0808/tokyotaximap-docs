@@ -966,3 +966,43 @@ categoryのenumいきましょう。
 - `README.md` — 未決定事項の更新
 
 ---
+
+## 日時:2026-07-20 19:15 JST
+
+```
+全文検索の基礎から説明してほしい。Pagefind / FlexSearch を知らない。
+→ Pagefind を導入することにする。HTML を食わせる手間の少なさ、日本語対応のしやすさが理由。
+→ keywords をどう HTML に出力するか。
+→ サンプル記事 1 本の設計に進んでもよいか。
+→ このスレッドを要約して docs に決定事項を記述。architecture.md にも Q&A として記録。
+```
+
+## 回答
+
+**2026-07-20 19:15 JST**
+
+---
+
+### 決定
+
+- 全文検索エンジン: **Pagefind** を採用
+- 選定理由: ビルド後 HTML から索引生成、日本語（CJK）対応のしやすさ、サーバー不要、FlexSearch + 形態素解析より導入コストが低い
+- `keywords` の HTML 出力: 画面には出さず `data-pagefind-meta="keywords"` で hidden 埋め込み。本文は `data-pagefind-body`
+- サジェスト UI: Pagefind 同梱 UI は PoC 用。本番は Pagefind JS API + React 自前 UI（表示は常に `title`）
+- 次のステップ: サンプル記事の設計（まず施設 1 本）に進んでよい
+
+### `docs/` への反映
+
+- `docs/engineering/architecture.md` — Pagefind 採用、keywords HTML 出力、次のステップ、Q&A
+- `docs/design/content-model.md` — Pagefind / keywords HTML / サジェスト UI の追記
+- `docs/decisions/0001-use-nextjs.md` — 全文検索エンジンを後続決定へ移動
+- `README.md` — 未決定事項から検索エンジンを削除
+
+### 未決定（残）
+
+- `tags` の enum リスト
+- ホスティング・デプロイ・監視
+- ミニ単語帳のデータ形式と Pagefind への載せ方
+- サンプル記事のファイル配置・本文編集ルールの詳細
+
+---

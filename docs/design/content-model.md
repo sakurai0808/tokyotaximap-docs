@@ -32,6 +32,8 @@
 
 ## 検索・サジェスト
 
+検索エンジンは Pagefind を採用する。構築方式・Phase 設計の詳細は [アプリケーション技術設計](../engineering/architecture.md#全文検索サジェスト) を参照。
+
 ### 検索インデックス
 
 次を検索対象とする。
@@ -43,9 +45,13 @@
 
 `tags` は検索インデックスには載せない（回遊・関連記事用）。
 
+Pagefind は最終 HTML を索引化するため、front matter の `keywords` は記事テンプレートで HTML に埋め込む（画面には出さず、`data-pagefind-meta="keywords"` で出力）。本文側は `data-pagefind-body` を付ける。
+
 ### サジェスト
 
 `title` と `keywords` でマッチさせる。候補の表示文言は常に `title` とし、ヒット元が keyword でもタイトルを表示する。候補をタップすると検索ボックスに `title` が挿入される。
+
+この表示ルールは Pagefind 同梱 UI ではなく、React 側で実装する。
 
 ## メタデータ（front matter）
 
