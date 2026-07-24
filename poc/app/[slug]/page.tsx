@@ -1,4 +1,4 @@
-// JSXでHTMLページを組み立てる(ブラウザがそのHTMLを表示する)
+// 記事詳細ページ。JSXでHTMLページを組み立てる(ブラウザがそのHTMLを表示する)
 
 import { notFound } from "next/navigation";
 import { getAllSlugs, getArticleBySlug } from "@/lib/articles"; // articles.tsから機能をインポート
