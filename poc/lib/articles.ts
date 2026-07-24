@@ -25,6 +25,26 @@ export function getAllSlugs(): string[] {
     .map((file) => file.replace(/\.md$/, "")); // 「.md」を除去
 }
 
+// 一覧ページ用の型。用途をArticleと分ける
+export type ArticleSummary = {
+  slug: string;
+  title: string;
+};
+
+// 記事のスラッグ、タイトルを返す関数
+export function getArticleSummaries(): ArticleSummary[] {
+  return getAllSlugs().map((slug) => {
+    const filePath = path.join(articlesDir, `${slug}.md`);
+    const raw = fs.readFileSync(filePath, "utf8");
+    const { data } = matter(raw);
+
+    return {
+      slug,
+      title: data.title as string,
+    };
+  });
+}
+
 // 記事の内容を読み取ってMarkdownからHTMLに出力する関数
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
   // slugから.mdファイルのパスを組み立てる
