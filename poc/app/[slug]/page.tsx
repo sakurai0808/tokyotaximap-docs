@@ -26,6 +26,12 @@ export default async function ArticlePage({ params }: PageProps) {
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-4 text-3xl font-bold">{article.title}</h1>
 
+      <p className="mb-2 text-sm text-zinc-500">
+        {article.category} / 公開{article.publishedAt} / 更新{" "}
+        {/* 改行時につぶれないように空白文字で */}
+        {article.updatedAt}
+      </p>
+
       {/* summaryがあればリード文を表示 */}
       {article.summary && (
         <p className="mb-8 text-lg text-zinc-600">{article.summary}</p>

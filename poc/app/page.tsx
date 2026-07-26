@@ -16,6 +16,9 @@ export default function Home() {
             <Link href={`/${article.slug}`} className="text-blue-600 underline">
               {article.title}
             </Link>
+            <span className="ml-2 text-sm text-zinc-500">
+              {article.category} ・ 更新 {article.updatedAt}
+            </span>
           </li>
         ))}
       </ul>

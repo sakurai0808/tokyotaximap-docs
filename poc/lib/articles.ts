@@ -9,12 +9,15 @@ import html from "remark-html";
 // 記事ディレクトリを定義する
 const articlesDir = path.join(process.cwd(), "content/articles");
 
-// 記事の型を定義。まずは最小セット
+// 記事の型を定義。記事詳細用
 export type Article = {
   slug: string;
   title: string;
   summary?: string;
   contentHtml: string;
+  category: string;
+  publishedAt: string;
+  updatedAt: string;
 };
 
 // 全ての記事のデータの一覧を作る関数
@@ -29,6 +32,8 @@ export function getAllSlugs(): string[] {
 export type ArticleSummary = {
   slug: string;
   title: string;
+  category: string;
+  updatedAt: string;
 };
 
 // 記事のスラッグ、タイトルを返す関数
@@ -41,6 +46,8 @@ export function getArticleSummaries(): ArticleSummary[] {
     return {
       slug,
       title: data.title as string,
+      category: data.category as string,
+      updatedAt: String(data.updatedAt),
     };
   });
 }
@@ -64,5 +71,8 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     title: data.title as string,
     summary: data.summary as string | undefined,
     contentHtml: processed.toString(),
+    category: data.category as string,
+    publishedAt: String(data.publishedAt),
+    updatedAt: String(data.updatedAt),
   };
 }
