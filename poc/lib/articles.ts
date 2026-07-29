@@ -18,6 +18,7 @@ export type Article = {
   category: string;
   publishedAt: string;
   updatedAt: string;
+  keywords: string[];
 };
 
 // 全ての記事のデータの一覧を作る関数
@@ -74,5 +75,6 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     category: data.category as string,
     publishedAt: String(data.publishedAt),
     updatedAt: String(data.updatedAt),
+    keywords: (data.keywords ?? []) as string[], // キーがないときはから配列にする
   };
 }

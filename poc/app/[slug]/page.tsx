@@ -27,6 +27,15 @@ export default async function ArticlePage({ params }: PageProps) {
       {/* Pagefindが索引する範囲(pagefindはHTMLを探索する) */}
       <div data-pagefind-body>
         <h1 className="mb-4 text-3xl font-bold">{article.title}</h1>
+
+        {article.keywords.length > 0 && (
+          <div hidden aria-hidden="true">
+            <span data-pagefind-meta="keywords">
+              {article.keywords.join(", ")} {/* "a, b, c"という文字列で出力 */}
+            </span>
+          </div>
+        )}
+
         <p className="mb-2 text-sm text-zinc-500" data-pagefind-ignore>
           {" "}
           {/* 日付のようなノイズはPagefindから除外 */}
