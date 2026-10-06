@@ -5,6 +5,7 @@ import path from "path"; // パスを結合させる
 import matter from "gray-matter"; // front matterを分割
 import { remark } from "remark";
 import html from "remark-html";
+import remarkGfm from "remark-gfm";
 
 // 記事ディレクトリを定義する
 const articlesDir = path.join(process.cwd(), "content/articles");
@@ -65,7 +66,10 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 
   const raw = fs.readFileSync(filePath, "utf8"); // rawはファイル全文の文字列を指す
   const { data, content } = matter(raw); // 分割代入でdata, contentを抜き出し
-  const processed = await remark().use(html).process(content); // Markdown文字列をHTML出力
+  const processed = await remark()
+    .use(remarkGfm) // GFM(表などの拡張機能)を解析できるようにする
+    .use(html)
+    .process(content); // Markdown文字列をHTML出力
 
   return {
     slug,

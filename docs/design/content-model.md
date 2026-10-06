@@ -10,10 +10,10 @@
 
 記事ファイルは **slugフラット**で置く。カテゴリ別フォルダにはしない（URLにカテゴリを含めないため。カテゴリはfront matterの `category` で持つ）。
 
-| 段階 | パス |
-| --- | --- |
-| 設計サンプル（本リポジトリ） | `docs/design/samples/articles/{slug}.md` |
-| 実装リポジトリ（将来） | `content/articles/{slug}.md` |
+| 段階                             | パス                                                           |
+| -------------------------------- | -------------------------------------------------------------- |
+| 設計サンプル（本リポジトリ）     | `docs/design/samples/articles/{slug}.md`                       |
+| 実装リポジトリ（将来）           | `content/articles/{slug}.md`                                   |
 | サムネイル画像（実装リポジトリ） | `public/images/articles/{slug}.png` など（`thumbnail` と対応） |
 
 設計サンプル: [ザ・キャピトルホテル東急](./samples/articles/the-capitol-hotel-tokyu.md)
@@ -53,16 +53,31 @@
 - 本文内の区分は太字・段落で足りる
 - 地図がある場合は **`## 地図`** を置く（埋め込み方式は未決定）
 
-施設記事の型（サンプル: ザ・キャピトルホテル東急）:
+「施設」記事の型（サンプル: ザ・キャピトルホテル東急）:
 
 ```markdown
 ## 住所
+
 ## 車寄せ
+
 ## 基本事項
+
 ## 地図
 ```
 
 まずは施設でこの型を採用する。他カテゴリも同様に寄せる。
+
+---
+
+「幹線道路」記事の型(サンプル: 赤坂通り) :
+
+```markdown
+## 基本事項
+
+## 地図
+```
+
+交差点のテーブルは、概要を記述したあとに表示させる。読者からするとページを開いていきなりテーブルが表示されても困惑する可能性があり、また概要文も長い文章になることはそんなに考えられない。また幹線道路によってテーブルの行数の多さがまちまちであることを考慮したうえでの決定である。
 
 ### 用語
 
@@ -98,17 +113,17 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 
 ### 必須キー
 
-| キー          | 型                     | 説明                                                                  |
-| ------------- | ---------------------- | --------------------------------------------------------------------- |
-| `title`       | string                 | 記事タイトル                                                          |
-| `slug`        | string                 | URLスラッグ（WordPressから引き継ぎ）                                |
-| `publishedAt` | string (`YYYY-MM-DD`)  | 初回公開日。移行時はWordPressの公開日を引き継ぐ                     |
-| `updatedAt`   | string (`YYYY-MM-DD`)  | 内容として意味のある最終更新日。表示の正とする（Gitのコミット日は使わない） |
-| `category`    | enum                   | [カテゴリ一覧](../requirements/content.md#単語系記事)                 |
-| `city`        | string[]               | 所属する区。区なしは `[]`。UI上は「区から探す」                      |
-| `keywords`    | string[]               | 呼称の揺らぎ。なければ `[]`                                           |
-| `pinmap`      | boolean                | ピンマップ掲載可否。全記事で `true` / `false` を明示                  |
-| `thumbnail`   | string                 | サムネイル画像パス（一覧・SNS共有用）                                |
+| キー          | 型                    | 説明                                                                        |
+| ------------- | --------------------- | --------------------------------------------------------------------------- |
+| `title`       | string                | 記事タイトル                                                                |
+| `slug`        | string                | URLスラッグ（WordPressから引き継ぎ）                                        |
+| `publishedAt` | string (`YYYY-MM-DD`) | 初回公開日。移行時はWordPressの公開日を引き継ぐ                             |
+| `updatedAt`   | string (`YYYY-MM-DD`) | 内容として意味のある最終更新日。表示の正とする（Gitのコミット日は使わない） |
+| `category`    | enum                  | [カテゴリ一覧](../requirements/content.md#単語系記事)                       |
+| `city`        | string[]              | 所属する区。区なしは `[]`。UI上は「区から探す」                             |
+| `keywords`    | string[]              | 呼称の揺らぎ。なければ `[]`                                                 |
+| `pinmap`      | boolean               | ピンマップ掲載可否。全記事で `true` / `false` を明示                        |
+| `thumbnail`   | string                | サムネイル画像パス（一覧・SNS共有用）                                       |
 
 `city` の取りうる値は次の6つ。詳細は [コンテンツ構造](../requirements/content.md#区との紐づけ) を参照。
 
@@ -127,7 +142,7 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 | `location` | object   | `pinmap: true` のとき必須（`lat`, `lng`）       |
 | `summary`  | string   | `pinmap: true` のとき必須。ポップアップ用の短文 |
 | `youtube`  | string   | 任意。動画がない記事はキーを省略                |
-| `tags`     | string[] | 任意。なければ `[]`。enumリストは未確定        |
+| `tags`     | string[] | 任意。なければ `[]`。enumリストは未確定         |
 
 ### 記述例
 
