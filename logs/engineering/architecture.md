@@ -1088,3 +1088,103 @@ categoryのenumいきましょう。
 
 ---
 
+## 日時:2026-07-22 19:22 JST
+
+```
+サンプル記事（ザ・キャピトルホテル東急）をNext.jsで読み込んで表示するサンプルを作りたい。
+Next.jsは久しぶりなので、基礎から教わりながら自分で手を動かす。
+まずどう管理するかの構成を決めるべきか。App Router、TypeScriptは確定。
+```
+
+## 回答
+
+**2026-07-22 19:22 JST**
+
+---
+
+### 決定
+
+- PoCは本リポジトリ内の `poc/` で行う（実装リポジトリは未作成）
+- 最小構成から始める。ゴールは「`/the-capitol-hotel-tokyu/` でタイトルと本文が見える」
+  - 記事: `poc/content/articles/{slug}.md`（`app/` の外に置き、ルーティング用コードと混ぜない）
+  - 読み込み: `poc/lib/articles.ts` に集約（`gray-matter` でfront matterを分割、`remark` + `remark-html` で本文をHTML化）
+  - 記事ページ: `poc/app/[slug]/page.tsx`（`generateStaticParams` でビルド時に生成）
+- Pagefind・ピンマップ・CMS・ホスティングはこの段階では決めない
+
+### 実装の経過（7/22〜7/29）
+
+- 一覧ページ（タイトル表示）と記事詳細ページを作成
+- Pagefind向けのマークアップ: 本文を `data-pagefind-body`、`keywords` をhiddenの `data-pagefind-meta`、日付行を `data-pagefind-ignore`
+- 静的エクスポート（`output: "export"`、`trailingSlash: true`）。`npm run build` で `next build` のあとPagefindが索引を生成
+
+---
+
+## 日時:2026-10-04 06:47 JST
+
+```
+（約2か月ぶりに再開）Pagefindの索引はできているが、検索UIがない。
+検索ページを作り、日本語で検索できるか確かめる。
+```
+
+## 回答
+
+**2026-10-04 06:47 JST**
+
+---
+
+### 決定
+
+- `poc/app/layout.tsx` の `<html lang>` を `en` から `ja` に変更
+  - Pagefindは `lang` で単語分割の方式を選ぶ。`en` のままだと索引が英語扱いになっていた（`pagefind.en_*.pf_meta` → 変更後 `pagefind.ja_*.pf_meta`）
+- 検索UIはPagefind 1.5の **Component UI**（Web Components）を使う。旧Default UI（`PagefindUI`）は非推奨
+- 検索ページ `poc/app/search/page.tsx` を作成（`<pagefind-input>` / `<pagefind-summary>` / `<pagefind-results>`）
+  - `/pagefind/pagefind-component-ui.js` は `next/script` に `type="module"` を付けて読み込む
+  - CSSの `<link>` はESLint（`@next/next/no-css-tags`）の警告が出る。ファイルがビルド後にしか存在せずimportできないため、PoCでは許容
+- カスタム要素の型定義を `poc/types/pagefind.d.ts` に追加（`declare module "react"` で `JSX.IntrinsicElements` を拡張）
+- 動作確認は `npm run build` → `npx pagefind --site out --serve` → `http://localhost:1414/search/`。`npm run dev` では `/pagefind/` が存在しないため試せない
+- 検索ページやトップページは `data-pagefind-body` がないため、自動で索引対象外になる
+
+### 検証結果
+
+`docs/engineering/architecture.md` の「検索機能のメモ」を参照。タイトルの一部、本文にない `keywords`、本文、住所、長い語の一部（「東急」「赤坂」）はいずれもヒットした。
+
+### 補足
+
+- 現在の表示は入力に応じた**検索結果**（タイトル＋抜粋）。要件の**サジェスト**（表示は常に `title`、タップで検索ボックスに `title` を挿入）は、Pagefind JS APIで自作する必要がある
+- 本番では `@pagefind/component-ui`（npmパッケージ）でCSS/JSをimportする方式も候補
+
+### 未決定（残）
+
+- 「2024」がヒットする理由（日付は `data-pagefind-ignore` で除外済み。数字の分割方法の影響か要確認）
+- サジェストUIの実装方式
+
+---
+
+## 日時:2026-10-06 17:58 JST
+
+```
+Markdownを保存すると「サジェストUI」が「サジェスト UI」のように、日本語と英数字の間に空白が入る。
+AIが書き換えたのではなく、保存のたびに起きる。
+```
+
+## 回答
+
+**2026-10-06 17:58 JST**
+
+---
+
+### 原因
+
+- ホームディレクトリに `~/package.json` と `~/node_modules/prettier`（2.8.8）があった
+- Prettier拡張機能はファイルの場所から親へ `node_modules/prettier` を探すため、拡張機能に同梱の3.xではなく2.8.8が使われていた
+- Prettier 2.xは日本語と英数字の間に空白を挿入する（3.0で廃止）
+
+### 決定
+
+- `~/node_modules` と `~/package.json` を削除（同梱のPrettier 3が使われるようになった）
+- 表記ルール: **日本語と英数字の間に空白を入れない**
+- `docs/` と `README.md` の既存の空白を一括で削除（コードブロック・インラインコード・front matterは対象外）
+- `logs/` は過去の記録のため変更しない
+
+---
+
