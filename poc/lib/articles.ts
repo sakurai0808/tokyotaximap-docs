@@ -75,6 +75,6 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     category: data.category as string,
     publishedAt: String(data.publishedAt),
     updatedAt: String(data.updatedAt),
-    keywords: (data.keywords ?? []) as string[], // キーがないときはから配列にする
+    keywords: (data.keywords ?? []) as string[], // キーがないときは空配列にする
   };
 }
