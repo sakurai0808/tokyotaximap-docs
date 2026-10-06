@@ -13,10 +13,10 @@ WordPressの使用を終了し、リニューアル後のウェブアプリケ�
 ## 関連する後続決定
 
 - CMS: 採用しない（Git + Markdown）。詳細は [アプリケーション技術設計](../engineering/architecture.md)
-- Markdown のメタデータ構造: 決定。詳細は [コンテンツモデル・編集方針](../design/content-model.md)
+- Markdownのメタデータ構造: 決定。詳細は [コンテンツモデル・編集方針](../design/content-model.md)
 - 全文検索エンジン: Pagefind。詳細は [アプリケーション技術設計](../engineering/architecture.md#全文検索サジェスト)
 
 ## 継続して検討する事項
 
-- `tags` の enum リスト
+- `tags` のenumリスト
 - ホスティングおよびデプロイ環境

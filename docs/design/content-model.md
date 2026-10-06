@@ -2,13 +2,13 @@
 
 ## 管理形式
 
-コンテンツは Markdown で管理する。カテゴリや記事ごとに優先すべき情報は異なるため、編集者が重要なブロックを本文の上部へ配置する。
+コンテンツはMarkdownで管理する。カテゴリや記事ごとに優先すべき情報は異なるため、編集者が重要なブロックを本文の上部へ配置する。
 
-記事 URL は `https://tokyotaximap.com/{slug}/` 形式とし、パス prefix は付けない。既存 WordPress サイトの英字スラッグを引き継ぐ。
+記事URLは `https://tokyotaximap.com/{slug}/` 形式とし、パスprefixは付けない。既存WordPressサイトの英字スラッグを引き継ぐ。
 
 ### ファイル配置
 
-記事ファイルは **slug フラット**で置く。カテゴリ別フォルダにはしない（URL にカテゴリを含めないため。カテゴリは front matter の `category` で持つ）。
+記事ファイルは **slugフラット**で置く。カテゴリ別フォルダにはしない（URLにカテゴリを含めないため。カテゴリはfront matterの `category` で持つ）。
 
 | 段階 | パス |
 | --- | --- |
@@ -34,11 +34,11 @@
 
 ## 編集ルール
 
-既存の WordPress サイトは自由に編集しながら作成されており、統一ルールが定まっていない。カテゴリ選定と本文構成の方針を以下にまとめ、カテゴリ横断の細部はサンプル記事を増やしながら言語化する。
+既存のWordPressサイトは自由に編集しながら作成されており、統一ルールが定まっていない。カテゴリ選定と本文構成の方針を以下にまとめ、カテゴリ横断の細部はサンプル記事を増やしながら言語化する。
 
 ### カテゴリ選定
 
-1 記事 1 カテゴリとする。同じ場所が複数の観点（通称・抜け道など）に当てはまる場合、記事の主題で 1 つを選び、重なりは `tags` や `keywords` で表現する。
+1記事1カテゴリとする。同じ場所が複数の観点（通称・抜け道など）に当てはまる場合、記事の主題で1つを選び、重なりは `tags` や `keywords` で表現する。
 
 - 場所の種類がはっきりしているもの（交差点、主要駅、施設、首都高）はそちらを優先する。
 - 道について、主題が「名前の確認」なら `通称がある道`、「走り方・ルート」なら `抜け道・定番ルート` とする。
@@ -71,7 +71,7 @@
 
 ## 検索・サジェスト
 
-検索エンジンは Pagefind を採用する。構築方式・Phase 設計の詳細は [アプリケーション技術設計](../engineering/architecture.md#全文検索サジェスト) を参照。
+検索エンジンはPagefindを採用する。構築方式・Phase設計の詳細は [アプリケーション技術設計](../engineering/architecture.md#全文検索サジェスト) を参照。
 
 ### 検索インデックス
 
@@ -80,37 +80,37 @@
 - 本文全文
 - `title`
 - `keywords`
-- ミニ単語帳の掲載語（記事 front matter とは別ファイル）
+- ミニ単語帳の掲載語（記事front matterとは別ファイル）
 
 `tags` は検索インデックスには載せない（回遊・関連記事用）。
 
-Pagefind は最終 HTML を索引化するため、front matter の `keywords` は記事テンプレートで HTML に埋め込む（画面には出さず、`data-pagefind-meta="keywords"` で出力）。本文側は `data-pagefind-body` を付ける。
+Pagefindは最終HTMLを索引化するため、front matterの `keywords` は記事テンプレートでHTMLに埋め込む（画面には出さず、`data-pagefind-meta="keywords"` で出力）。本文側は `data-pagefind-body` を付ける。
 
 ### サジェスト
 
-`title` と `keywords` でマッチさせる。候補の表示文言は常に `title` とし、ヒット元が keyword でもタイトルを表示する。候補をタップすると検索ボックスに `title` が挿入される。
+`title` と `keywords` でマッチさせる。候補の表示文言は常に `title` とし、ヒット元がkeywordでもタイトルを表示する。候補をタップすると検索ボックスに `title` が挿入される。
 
-この表示ルールは Pagefind 同梱 UI ではなく、React 側で実装する。
+この表示ルールはPagefind同梱UIではなく、React側で実装する。
 
 ## メタデータ（front matter）
 
-記事のメタデータは YAML front matter で管理する。具体的なスキーマ検証は [アプリケーション技術設計](../engineering/architecture.md) で実装する。
+記事のメタデータはYAML front matterで管理する。具体的なスキーマ検証は [アプリケーション技術設計](../engineering/architecture.md) で実装する。
 
 ### 必須キー
 
 | キー          | 型                     | 説明                                                                  |
 | ------------- | ---------------------- | --------------------------------------------------------------------- |
 | `title`       | string                 | 記事タイトル                                                          |
-| `slug`        | string                 | URL スラッグ（WordPress から引き継ぎ）                                |
-| `publishedAt` | string (`YYYY-MM-DD`)  | 初回公開日。移行時は WordPress の公開日を引き継ぐ                     |
-| `updatedAt`   | string (`YYYY-MM-DD`)  | 内容として意味のある最終更新日。表示の正とする（Git のコミット日は使わない） |
+| `slug`        | string                 | URLスラッグ（WordPressから引き継ぎ）                                |
+| `publishedAt` | string (`YYYY-MM-DD`)  | 初回公開日。移行時はWordPressの公開日を引き継ぐ                     |
+| `updatedAt`   | string (`YYYY-MM-DD`)  | 内容として意味のある最終更新日。表示の正とする（Gitのコミット日は使わない） |
 | `category`    | enum                   | [カテゴリ一覧](../requirements/content.md#単語系記事)                 |
-| `city`        | string[]               | 所属する区。区なしは `[]`。UI 上は「区から探す」                      |
+| `city`        | string[]               | 所属する区。区なしは `[]`。UI上は「区から探す」                      |
 | `keywords`    | string[]               | 呼称の揺らぎ。なければ `[]`                                           |
 | `pinmap`      | boolean                | ピンマップ掲載可否。全記事で `true` / `false` を明示                  |
-| `thumbnail`   | string                 | サムネイル画像パス（一覧・SNS 共有用）                                |
+| `thumbnail`   | string                 | サムネイル画像パス（一覧・SNS共有用）                                |
 
-`city` の取りうる値は次の 6 つ。詳細は [コンテンツ構造](../requirements/content.md#区との紐づけ) を参照。
+`city` の取りうる値は次の6つ。詳細は [コンテンツ構造](../requirements/content.md#区との紐づけ) を参照。
 
 - 渋谷区、新宿区、中央区、千代田区、港区、都心以外の区
 
@@ -127,7 +127,7 @@ Pagefind は最終 HTML を索引化するため、front matter の `keywords` �
 | `location` | object   | `pinmap: true` のとき必須（`lat`, `lng`）       |
 | `summary`  | string   | `pinmap: true` のとき必須。ポップアップ用の短文 |
 | `youtube`  | string   | 任意。動画がない記事はキーを省略                |
-| `tags`     | string[] | 任意。なければ `[]`。enum リストは未確定        |
+| `tags`     | string[] | 任意。なければ `[]`。enumリストは未確定        |
 
 ### 記述例
 
@@ -155,4 +155,4 @@ summary: 車寄せへの入口は2つあります。両方とも右左折で進�
 
 本文構成の例は設計サンプルを参照: [ザ・キャピトルホテル東急](./samples/articles/the-capitol-hotel-tokyu.md)
 
-`thumbnail` は記事上部の代表画像 1 枚を指定する。本文に複数画像がある記事（例: タクシー基礎）も、最上部の画像をサムネイルに用いる。
+`thumbnail` は記事上部の代表画像1枚を指定する。本文に複数画像がある記事（例: タクシー基礎）も、最上部の画像をサムネイルに用いる。

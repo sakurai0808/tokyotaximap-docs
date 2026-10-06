@@ -2,7 +2,7 @@
 
 新人のタクシー運転手にとって役立つ地理知識を学習できるウェブアプリケーション「東京都心タクマップ」の仕様・設計・開発過程をまとめるリポジトリです。
 
-既存の WordPress サイト「[東京都心タクマップ](https://tokyotaximap.com)」を、Next.js を使用したウェブアプリケーションへリニューアルします。
+既存のWordPressサイト「[東京都心タクマップ](https://tokyotaximap.com)」を、Next.jsを使用したウェブアプリケーションへリニューアルします。
 
 ## ドキュメント
 
@@ -16,7 +16,7 @@
 
 見た目・操作・情報の見せ方を扱う。
 
-- [UI・UX 設計](./docs/design/ui-ux.md)
+- [UI・UX設計](./docs/design/ui-ux.md)
 - [コンテンツモデル・編集方針](./docs/design/content-model.md)
 - 設計サンプル: [ザ・キャピトルホテル東急](./docs/design/samples/articles/the-capitol-hotel-tokyu.md)
 
@@ -29,12 +29,12 @@
 
 ### 移行・運用
 
-- [WordPress からの移行](./docs/operations/migration.md)
+- [WordPressからの移行](./docs/operations/migration.md)
 - [コンテンツの編集・公開](./docs/operations/publishing.md)
 
 ### 意思決定記録
 
-- [ADR 0001: Next.js を使用する](./docs/decisions/0001-use-nextjs.md)
+- [ADR 0001: Next.jsを使用する](./docs/decisions/0001-use-nextjs.md)
 
 ## 開発・検討ログ
 
@@ -44,7 +44,7 @@
 
 ## 現在の主な未決定事項
 
-- `tags` の enum リスト
+- `tags` のenumリスト
 - ホスティング・デプロイ・監視
-- ミニ単語帳のデータ形式と Pagefind への載せ方
+- ミニ単語帳のデータ形式とPagefindへの載せ方
 - 地図埋め込みの方式

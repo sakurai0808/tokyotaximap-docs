@@ -2,24 +2,24 @@
 
 ## 現状
 
-既存の WordPress サイトは自由に編集しながら作成してきたため、統一された編集ルールがない。
+既存のWordPressサイトは自由に編集しながら作成してきたため、統一された編集ルールがない。
 
 ## 方針
 
-- コンテンツは Git 上の Markdown（front matter 付き）で管理する。CMS は採用しない。
+- コンテンツはGit上のMarkdown（front matter付き）で管理する。CMSは採用しない。
 - 編集ルールは [コンテンツモデル・編集方針](../design/content-model.md) に従う。
 - カテゴリごとの重要情報を記事上部へ配置する。
 - 同じカテゴリでも重要項目の順序は記事ごとに異なるため、過度に固定的なルールにはしない。
 - 既存記事はリニューアル版の公開後に順次リライトする。
 
-## front matter の運用
+## front matterの運用
 
 - 必須キー・条件付きキーは [コンテンツモデル・編集方針](../design/content-model.md#メタデータfront-matter) を参照。
-- `publishedAt` / `updatedAt` は全記事で必須（`YYYY-MM-DD`）。表示の正は front matter とし、Git のコミット日は使わない。
+- `publishedAt` / `updatedAt` は全記事で必須（`YYYY-MM-DD`）。表示の正はfront matterとし、Gitのコミット日は使わない。
 - 本文を実質更新したら `updatedAt` を進める。
 - 値がない配列項目は空配列で明示する（`keywords: []`, `tags: []`, `city: []`）。
 - `pinmap` は全記事で `true` / `false` を明示する。
-- YouTube 動画がない記事は `youtube` キーを省略する。
+- YouTube動画がない記事は `youtube` キーを省略する。
 
 ## ファイル配置
 
@@ -27,7 +27,7 @@
 
 ## 未決定事項
 
-- Markdown 記事の作成・レビュー手順
+- Markdown記事の作成・レビュー手順
 - 公開承認の有無
 - 公開・更新手順
 - 地図埋め込みの方式
