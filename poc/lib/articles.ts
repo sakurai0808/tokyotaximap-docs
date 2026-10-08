@@ -6,20 +6,15 @@ import matter from "gray-matter"; // front matterを分割
 import { remark } from "remark";
 import html from "remark-html";
 import remarkGfm from "remark-gfm";
+import { articleSchema, type ArticleFrontMatter } from "./schema";
+import { z } from "zod";
 
 // 記事ディレクトリを定義する
 const articlesDir = path.join(process.cwd(), "content/articles");
 
-// 記事の型を定義。記事詳細用
-export type Article = {
+export type Article = ArticleFrontMatter & {
   slug: string;
-  title: string;
-  summary?: string;
   contentHtml: string;
-  category: string;
-  publishedAt: string;
-  updatedAt: string;
-  keywords: string[];
 };
 
 // 全ての記事のデータの一覧を作る関数
@@ -38,18 +33,32 @@ export type ArticleSummary = {
   updatedAt: string;
 };
 
+// 記事を読み込み、型が合っていなければビルドを中止する
+function readArticleFile(slug: string) {
+  const filePath = path.join(articlesDir, `${slug}.md`);
+  const raw = fs.readFileSync(filePath, "utf8");
+  const { data, content } = matter(raw);
+
+  const result = articleSchema.safeParse(data);
+  if (!result.success) {
+    throw new Error(
+      `${slug}.md のfront matterが不正です\n${z.prettifyError(result.error)}`, // prettifyErrorで、人が読みやすい文字列にする
+    );
+  }
+
+  return { frontMatter: result.data, content };
+}
+
 // 記事のスラッグ、タイトルを返す関数
 export function getArticleSummaries(): ArticleSummary[] {
   return getAllSlugs().map((slug) => {
-    const filePath = path.join(articlesDir, `${slug}.md`);
-    const raw = fs.readFileSync(filePath, "utf8");
-    const { data } = matter(raw);
+    const { frontMatter } = readArticleFile(slug);
 
     return {
       slug,
-      title: data.title as string,
-      category: data.category as string,
-      updatedAt: String(data.updatedAt),
+      title: frontMatter.title,
+      category: frontMatter.category,
+      updatedAt: frontMatter.updatedAt,
     };
   });
 }
@@ -64,21 +73,15 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     return null;
   }
 
-  const raw = fs.readFileSync(filePath, "utf8"); // rawはファイル全文の文字列を指す
-  const { data, content } = matter(raw); // 分割代入でdata, contentを抜き出し
+  const { frontMatter, content } = readArticleFile(slug);
   const processed = await remark()
     .use(remarkGfm) // GFM(表などの拡張機能)を解析できるようにする
     .use(html)
     .process(content); // Markdown文字列をHTML出力
 
   return {
+    ...frontMatter,
     slug,
-    title: data.title as string,
-    summary: data.summary as string | undefined,
     contentHtml: processed.toString(),
-    category: data.category as string,
-    publishedAt: String(data.publishedAt),
-    updatedAt: String(data.updatedAt),
-    keywords: (data.keywords ?? []) as string[], // キーがないときは空配列にする
   };
 }

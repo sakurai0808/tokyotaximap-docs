@@ -36,17 +36,13 @@ export default async function ArticlePage({ params }: PageProps) {
           </div>
         )}
 
-        <p className="mb-2 text-sm text-zinc-500" data-pagefind-ignore>
+        <p className="mb-8 text-sm text-zinc-500" data-pagefind-ignore>
           {" "}
           {/* 日付のようなノイズはPagefindから除外 */}
           {article.category} / 公開{article.publishedAt} / 更新{" "}
           {/* 改行時につぶれないように空白文字で */}
           {article.updatedAt}
         </p>
-        {/* summaryがあればリード文を表示 */}
-        {article.summary && (
-          <p className="mb-8 text-lg text-zinc-600">{article.summary}</p>
-        )}
         <article
           className="prose prose-zinc max-w-none"
           dangerouslySetInnerHTML={{ __html: article.contentHtml }} // remarkが作ったHTML文字列を埋め込む
