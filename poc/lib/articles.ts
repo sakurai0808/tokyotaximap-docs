@@ -85,3 +85,22 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     contentHtml: processed.toString(),
   };
 }
+
+export type SuggestItem = {
+  slug: string; // リストを表示するときのkeyとして使用
+  title: string;
+  keywords: string[];
+};
+
+// サジェストに必要なデータを集める関数
+export function getSuggestItems(): SuggestItem[] {
+  return getAllSlugs().map((slug) => {
+    const { frontMatter } = readArticleFile(slug);
+
+    return {
+      slug,
+      title: frontMatter.title,
+      keywords: frontMatter.keywords,
+    };
+  });
+}
