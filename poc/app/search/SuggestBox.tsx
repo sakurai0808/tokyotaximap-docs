@@ -28,7 +28,11 @@ export default function SuggestBox({ items }: { items: SuggestItem[] }) {
       {suggestions.length > 0 && (
         <ul>
           {suggestions.map((item) => (
-            <li key={item.slug}>{item.title}</li>
+            <li key={item.slug}>
+              <button type="button" onClick={() => setQuery(item.title)}> {/* サジェストが表示された時ではなく、「クリックしたときに」setQueryを呼ぶ */}
+                {item.title}
+              </button>
+            </li>
           ))}
         </ul>
       )}
