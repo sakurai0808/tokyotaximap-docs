@@ -105,7 +105,7 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 
 `title` と `keywords` でマッチさせる。候補の表示文言は常に `title` とし、ヒット元がkeywordでもタイトルを表示する。候補をタップすると検索ボックスに `title` が挿入される。
 
-この表示ルールはPagefind同梱UIではなく、React側で実装する。
+この表示ルールはPagefind同梱UIではなく、React側で実装する。本文の語では候補に出さないため、候補は `title` と `keywords` だけから探す（実装は [アプリケーション技術設計](../engineering/architecture.md#サジェストui) を参照）。
 
 ## メタデータ（front matter）
 

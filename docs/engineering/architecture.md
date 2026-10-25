@@ -90,11 +90,19 @@ Pagefindは最終HTMLを索引化する。front matterの `keywords` は記事�
 
 #### サジェストUI
 
-Pagefindは索引生成と日本語分割を担当する。要件固有のサジェスト（表示は常に `title`、タップ後に `title` を検索ボックスへ）はReact側で実装する。同梱UIはPoC用とし、本番はPagefind JS API + 自前UIを想定する。
+Pagefindは索引生成と日本語分割を担当する。要件固有のサジェスト（表示は常に `title`、タップ後に `title` を検索ボックスへ）はReact側で実装する。
+
+サジェストの候補はPagefindではなく、記事データから探す。Pagefindは本文も検索するため、`title` と `keywords` だけでマッチさせる要件より広く拾ってしまう。
+
+- サーバーコンポーネントで全記事の `slug`・`title`・`keywords` を集め、propsでクライアントコンポーネントに渡す（PoC: `poc/app/search/SuggestBox.tsx`）
+- 前後の空白を取り除いた入力で、`title` と `keywords` を部分一致で絞り込む。入力が空なら候補を出さない
+- 候補をタップすると入力欄に `title` を入れ、候補を閉じる。再び入力すると開く
+
+検索結果の一覧は、Pagefind JS API + 自前UIで表示する（同梱UIはPoC用）。
 
 #### マッチングの段階的拡張
 
-1. Phase 1: `keywords` を前方一致でサジェスト・検索両方に載せる
+1. Phase 1: `keywords` をサジェスト・検索両方に載せる。サジェストは部分一致（前方一致だと、先頭に「ザ・」が付くtitleなどを取りこぼすため）
 2. Phase 2: よくあるタイポを `keywords` に運用で蓄積
 3. Phase 3: あいまい一致（編集距離・正規化）を検討
 
@@ -104,9 +112,10 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 
 ## 次のステップ
 
-PoC（`poc/`）で、記事2本（施設・`pinmap: true`、幹線道路・`pinmap: false`）のMarkdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証まで確認した。続けて次を行う。
+PoC（`poc/`）で、記事2本（施設・`pinmap: true`、幹線道路・`pinmap: false`）のMarkdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証、サジェストUIまで確認した。続けて次を行う。
 
-- サジェストUIの自作（Pagefind JS API。表示は常に `title`、タップで `title` を検索ボックスへ）
+- 検索結果の一覧をPagefind JS APIと自前UIで表示する（同梱のComponent UIを置き換え、サジェストの入力欄とつなぐ）
+- ピンマップ（Leaflet。`pinmap: true` の記事をピンで表示）
 - front matterの `slug` とファイル名の一致チェック（必要に応じて）
 
 ## 未決定事項
