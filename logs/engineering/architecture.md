@@ -1296,3 +1296,107 @@ AIが書き換えたのではなく、保存のたびに起きる。
 
 ---
 
+## 日時:2026-10-08 17:11 JST
+
+```
+Zodでfront matterのスキーマ検証を始める。
+```
+
+## 回答
+
+**2026-10-08 17:11 JST**
+
+---
+
+### 決定
+
+- `zod`（4.6.5）を `poc/` に追加し、スキーマは `poc/lib/schema.ts` に置く（`articles.ts` は「読む」役、`schema.ts` は「正しい形を決める」役）
+- `as string` による型付けをやめる。Zodの定義から、実行時の検証と型（`z.infer`）を同時に得る
+- `category` / `city` は `as const` の定数配列にして `z.enum()` に渡す。カテゴリは単語系7つ＋実践講座3つの計10個
+- `tags` はenumリストが未決定のため、当面は `z.array(z.string())`
+- 条件付きキーは `z.discriminatedUnion("pinmap", [...])` で表す
+  - `pinmap: true` のルール: `location`（`lat`, `lng`）と `summary` が必須
+  - `pinmap: false` のルール: `location` / `summary` を持たない
+  - `superRefine` で手書きする方法より、TypeScriptも分岐を理解する（`pinmap` を確かめると `location` / `summary` を安全に使える）ため
+
+### 補足
+
+- `npm install zod` を最初にリポジトリのルートで実行し、ルートに `package.json` / `package-lock.json` / `node_modules/` ができた。npmは実行したディレクトリの `package.json` に書き込むため。削除して `poc/` で入れ直した
+- 引用符なしの `publishedAt: 2024-04-15` は、gray-matter（内部のYAMLパーサー）が `Date` に変換して渡す。`z.string()` では通らない
+  - `z.date().transform((d) => d.toISOString().slice(0, 10))` で受け取り、`YYYY-MM-DD` の文字列に変換する
+  - YAMLの日付はUTCの0時として読まれるため、日付はずれない
+
+---
+
+## 日時:2026-10-09 07:25 JST
+
+```
+lib/articles.ts でスキーマを使い、読み込み処理を書き換える。
+```
+
+## 回答
+
+**2026-10-09 07:25 JST**
+
+---
+
+### 決定
+
+- 読み込みと検証を `readArticleFile(slug)` にまとめ、`getArticleSummaries` と `getArticleBySlug` の両方から呼ぶ
+- 検証は `safeParse` を使い、失敗したら `throw new Error()` でビルドを止める。メッセージにはslugと `z.prettifyError(result.error)` を入れ、どの記事のどのキーが不正か分かるようにする
+- `Article` 型は `ArticleFrontMatter & { slug; contentHtml }` とし、スキーマから作る
+- `getArticleBySlug` は `{ ...frontMatter, slug, contentHtml }` で返す
+  - スプレッド構文で丸ごと展開すると、`pinmap`・`location`・`summary` の組み合わせが保たれ、型が合う
+- `summary` は**ピンマップのポップアップ専用**とし、記事ページのリード文としては表示しない（`docs/design/content-model.md` に追記済み）
+
+### 補足
+
+- `Article` 型が2択（`pinmap: true` / `false`）になったため、記事ページの `article.summary` がビルド時の型エラーになった。`summary` を使う場所では、先に `pinmap` を確かめる必要がある
+- 以前の `String(data.updatedAt)` は、`Date` を文字列化していたため `YYYY-MM-DD` になっていなかった可能性がある。スキーマでの変換に置き換えて解消
+
+---
+
+## 日時:2026-10-25 12:21 JST
+
+```
+わざと壊すテストがすべて想定どおりに止まった。戻すと通る。
+discriminatedUnion が pinmap の値を見てルールを切り替える、とはどういうことか。
+```
+
+## 回答
+
+**2026-10-25 12:21 JST**
+
+---
+
+### 検証結果
+
+1つ壊す → `npm run build` → 戻す、を1件ずつ行った。すべてビルドが止まり、記事のファイル名・違反内容・キーが表示された。
+
+| 壊し方 | 結果 |
+| --- | --- |
+| 赤坂通りの `city` を `[千代田区、港区]`（全角の「、」）にする | `city[0]` のenum違反で止まる |
+| キャピトルホテル東急の `summary` を消す | `summary` がないと言われて止まる |
+| 赤坂通りの `category` を `幹線道` にする | enum違反で止まる |
+| 赤坂通りの `updatedAt` を `"2024/09/23"`（引用符付き）にする | `Date` ではなく文字列なので止まる |
+| 赤坂通りの `pinmap` を `true` にする | `location` と `summary` の2つが `received undefined` で止まる |
+| 赤坂通りの `pinmap` の行を消す | `Invalid discriminator value. Expected 'true' \| 'false'`（at `pinmap`）で止まる |
+
+### わかったこと
+
+- `discriminatedUnion` は、最初に識別子（discriminator）である `pinmap` の値だけを見て、どちらのルールで検証するかを1つに決める
+  - 赤坂通りは `pinmap` の1行以外を変えていないのに、`false` なら通り、`true` なら `location` / `summary` を求められた
+  - エラーに `pinmap: false` 側のルールの話は出ない。候補から外れているため、何を直せばよいかがはっきりしたメッセージになる
+- `pinmap` 自体がないと、どちらのルールも選べず、`pinmap` のエラーになる
+
+### 未決定（残）
+
+- `tags` のenumリスト
+- front matterの `slug` とファイル名の一致チェック（必要なら `parse` のあとに追加する）
+
+### 次のステップ
+
+- サジェストUIの自作（Pagefind JS API。表示は常に `title`、タップで `title` を検索ボックスへ）
+
+---
+

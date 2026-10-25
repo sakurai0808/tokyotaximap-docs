@@ -42,6 +42,7 @@ const baseSchema = z.object({
 });
 
 export const articleSchema = z.discriminatedUnion("pinmap", [
+  // pinmapの値によって使うルールを決める
   baseSchema.extend({
     pinmap: z.literal(true),
     location: z.object({ lat: z.number(), lng: z.number() }),

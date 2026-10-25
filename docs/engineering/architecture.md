@@ -35,6 +35,14 @@ Markdown記事にYAML front matterを付与する。キー定義・編集ルー�
 
 ビルド時にfront matterを検証する。`category`・`city`・`tags` はenumで制約する。`publishedAt`・`updatedAt` は必須（`YYYY-MM-DD`）。キー定義の詳細は [コンテンツモデル・編集方針](../design/content-model.md) を参照。
 
+PoCでは **Zod** で実装した（`poc/lib/schema.ts`）。
+
+- スキーマから実行時の検証と型（`z.infer`）を同時に得る。読み込み側（`poc/lib/articles.ts`）で `as` による型付けはしない
+- `category`・`city` は定数配列（`as const`）を `z.enum()` に渡す。`tags` はenumリストが未決定のため、当面は文字列の配列
+- 条件付きキーは `pinmap` を識別子とする `z.discriminatedUnion` で表す。`pinmap: true` なら `location`・`summary` が必須、`false` なら持たない
+- 日付はYAMLパーサーが `Date` として渡すため、`Date` として検証し `YYYY-MM-DD` の文字列に変換する
+- 検証に失敗したらビルドを止める。エラーには記事のファイル名と違反したキーを表示する
+
 ### 全文検索・サジェスト
 
 | 対象       | データ源                                   |
@@ -96,10 +104,10 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 
 ## 次のステップ
 
-施設サンプル1本の設計とファイル配置が固まった。続けて次を行う。
+PoC（`poc/`）で、記事2本（施設・`pinmap: true`、幹線道路・`pinmap: false`）のMarkdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証まで確認した。続けて次を行う。
 
-- 可能なら `pinmap: false` や別カテゴリの2本目で条件付きキーの差を確認する
-- Next.jsでのMarkdown読み込み、続けてPagefind PoC
+- サジェストUIの自作（Pagefind JS API。表示は常に `title`、タップで `title` を検索ボックスへ）
+- front matterの `slug` とファイル名の一致チェック（必要に応じて）
 
 ## 未決定事項
 
