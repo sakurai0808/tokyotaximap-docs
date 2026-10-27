@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { SuggestItem } from "@/lib/articles";
 
+import Form from "next/form";
+
 export default function SuggestBox({ items }: { items: SuggestItem[] }) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false); // サジェストの表示のONOFF
@@ -19,15 +21,15 @@ export default function SuggestBox({ items }: { items: SuggestItem[] }) {
 
   return (
     <div className="mb-8">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          console.log(keyword);
+      <Form
+        action="/search/"
+        onSubmit={() => {
           setIsOpen(false);
         }}
       >
         <input
           type="search"
+          name="q"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -55,7 +57,7 @@ export default function SuggestBox({ items }: { items: SuggestItem[] }) {
             ))}
           </ul>
         )}
-      </form>
+      </Form>
     </div>
   );
 }
