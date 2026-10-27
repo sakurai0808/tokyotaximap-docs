@@ -2,6 +2,8 @@ import Script from "next/script";
 
 import { getSuggestItems } from "@/lib/articles";
 import SuggestBox from "@/app/search/SuggestBox";
+import SearchResults from "@/app/search//SearchResults";
+import { Suspense } from "react";
 
 export default function SearchPage() {
   const items = getSuggestItems();
@@ -16,6 +18,9 @@ export default function SearchPage() {
       <pagefind-input placeholder="施設名・通称・地名で検索"></pagefind-input>
       <pagefind-summary></pagefind-summary>
       <pagefind-results></pagefind-results>
+      <Suspense fallback={<p>読み込み中...</p>}>
+        <SearchResults />
+      </Suspense>
     </main>
   );
 }
