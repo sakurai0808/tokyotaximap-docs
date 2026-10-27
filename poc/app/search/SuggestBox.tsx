@@ -19,34 +19,43 @@ export default function SuggestBox({ items }: { items: SuggestItem[] }) {
 
   return (
     <div className="mb-8">
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setIsOpen(true);
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          console.log(keyword);
+          setIsOpen(false);
         }}
-        placeholder="施設名・通称・地名で検索"
-        className="w-full rounded border px-3 py-2"
-      />
-      {isOpen && suggestions.length > 0 && (
-        <ul>
-          {suggestions.map((item) => (
-            <li key={item.slug}>
-              <button
-                type="button"
-                // サジェストが表示された時ではなく、「クリックしたときに」setQueryを呼ぶ
-                onClick={() => {
-                  setQuery(item.title);
-                  setIsOpen(false);
-                }}
-              >
-                {item.title}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      >
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          placeholder="施設名・通称・地名で検索"
+          className="w-full rounded border px-3 py-2"
+        />
+        <button type="submit">検索</button>
+        {isOpen && suggestions.length > 0 && (
+          <ul>
+            {suggestions.map((item) => (
+              <li key={item.slug}>
+                <button
+                  type="button"
+                  // サジェストが表示された時ではなく、「クリックしたときに」setQueryを呼ぶ
+                  onClick={() => {
+                    setQuery(item.title);
+                    setIsOpen(false);
+                  }}
+                >
+                  {item.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </form>
     </div>
   );
 }
