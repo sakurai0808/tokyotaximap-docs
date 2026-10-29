@@ -1582,3 +1582,211 @@ Zodでの検証は、WordPressからNext.jsへのリプレイス全体のどの�
 
 ---
 
+## 日時:2026-10-28 07:00 JST
+
+```
+次のステップ（検索結果の一覧を、Pagefind JS APIと自前UIで表示する）の進め方の説明をお願いします。
+/pagefind/pagefind.js はビルド後にしか存在しないため、Next.js（Turbopack）からの読み込み方を確認したい。
+```
+
+## 回答
+
+**2026-10-28 07:00 JST**
+
+---
+
+### 決定
+
+- 検索語はURLに載せる（`/search/?q=赤坂`）。ページ内の `useState` だけでは持たない
+  - 本実装では、固定ヘッダーの検索ボックスから記事一覧ページへ移る。「`/search/?q=...` へ移動する」形なら、そのまま使い回せる
+  - 記事を開いてからブラウザで戻ると、同じ結果一覧に戻れる
+- 役割を分ける。`SuggestBox` は入力と送信、`SearchResults`（新規）はURLの `q` を読んで検索と表示
+- 進め方は5段階
+  1. 入力欄を `<form>` で囲み、検索ボタンとEnterで送信する（devで確認）
+  2. `next/form` の `<Form>` で `?q=` 付きのURLへ移動し、`useSearchParams` で読む（devで確認）
+  3. Pagefindを読み込み、検索する（ビルド後に確認）
+  4. タイトル・抜粋・リンクを一覧で表示する
+  5. 同梱のComponent UI（`<pagefind-input>` など、CSSとスクリプト、`poc/types/pagefind.d.ts`）を外す
+
+### 調べたこと（同梱ドキュメント）
+
+- `/pagefind/pagefind.js` の読み込みは、動的な `import()` に `/* webpackIgnore: true */` を付ける（`lazy-loading.md`、`turbopack.md`）。Turbopackでも有効で、束ねずに実行時にそのまま読み込む
+  - パスは変数に入れる。文字列を直接書くと、TypeScriptが「モジュールが見つからない」とエラーを出す
+  - 読み込むのは `useEffect` の中など、ブラウザで実行される場所に限る
+- `output: "export"` では、サーバーコンポーネントの `searchParams` は使えない（ビルド時にHTMLを作るため）。クライアントで `useSearchParams` を使い、`<Suspense>` で囲む。囲まないと本番ビルドが止まる（`use-search-params.md`）
+- `node_modules/pagefind` の型は、索引を作るNode.js向けのAPIのもの。ブラウザで使う検索APIの型は、自分で最小限を書く
+- 抜粋（`excerpt`）は `<mark>` 付きのHTML文字列なので、表示には `dangerouslySetInnerHTML` を使う。索引の中身は自分の記事だけなので許容する
+- devでは `pagefind.js` が404になる。`try` / `catch` で受け、確認はビルド後に行う
+
+---
+
+## 日時:2026-10-28 07:15 JST
+
+```
+段階1: onSubmit で e.preventDefault() を呼び、console.log(keyword) で送信された語を出す、について教えてほしい。
+```
+
+## 回答
+
+**2026-10-28 07:15 JST**
+
+---
+
+### 実装
+
+- 入力欄、検索ボタン（`type="submit"`）、候補の `<ul>` を `<form>` で囲み、`onSubmit` で `e.preventDefault()` と `setIsOpen(false)` を呼ぶ
+- 候補のボタンは前回 `type="button"` にしていたので、タップしても送信されない
+
+### 学んだこと
+
+- `<form>` は送信されると、ブラウザが標準で `action` のURL（なければ今のページ）へ移動する。そのためページが読み直され、`useState` の値が初期値に戻る。`e.preventDefault()` は、この標準の動きを止める
+- `e` はアロー関数の引数で、Reactがイベントの情報を渡す。`onChange` の `e` はその関数の `{ }` の中だけで有効なので、`onSubmit` で使うには `(e) =>` と書いて自分で受け取る
+- `e.prevent.default` ではなく `e.preventDefault()`。`preventDefault` で1つの名前で、`()` を付けて初めて呼ばれる
+- 内側の `{ }` からは、外側で宣言した `keyword` が見える。逆は見えない
+- クライアントコンポーネントの `console.log` は、ターミナルではなく、ブラウザの開発者ツールのコンソールに出る
+
+### つまずいた点
+
+- `onSubmit={() => { e.prevent.default; }}` と書き、`e` を受け取っていなかった。名前を書くことと呼ぶことの区別も、ついていなかった
+
+### 確認結果
+
+- Enterでも検索ボタンでも送信でき、コンソールに語が出た
+- `e.preventDefault()` を消すと、ページが読み直されて入力欄が空に戻った
+
+---
+
+## 日時:2026-10-28 07:21 JST
+
+```
+段階2-1: <form> を next/form の <Form> に置き換え、検索語をURLに載せて移動する。
+```
+
+## 回答
+
+**2026-10-28 07:21 JST**
+
+---
+
+### 実装
+
+- `<input>` に `name="q"` を足す。送信すると、ブラウザが `?q=入力した文字` をURLに付ける
+- `<form>` を `<Form action="/search/">`（`import Form from "next/form"`）にする
+- `onSubmit` には `setIsOpen(false)` だけを残す。`e.preventDefault()` を呼ぶと、`<Form>` の移動まで止まる（`form.md`）
+
+### 学んだこと
+
+- ブラウザ標準の送信では、`?q=` 付きのURLへ移ってページ全体を読み直す。`<Form>` は同じURLへ、ページを読み直さずに移る（`<Link>` と同じクライアント側の移動）
+- `?` 以降を検索パラメーター（クエリ文字列）と呼ぶ。複数あるときは `&` でつなぐ
+
+---
+
+## 日時:2026-10-28 07:36 JST
+
+```
+「trailingSlash: true に合わせて、末尾に / を付けます」とは、どういう意味か。
+```
+
+## 回答
+
+**2026-10-28 07:36 JST**
+
+---
+
+### 学んだこと
+
+- `trailingSlash: true` は、URLの末尾に `/` を付ける側に統一する設定（`trailingSlash.md`）
+  - `/search` にアクセスすると、`/search/` へ転送する
+  - `output: "export"` と組み合わせると、`search.html` ではなく `search/index.html` として書き出す（`poc/out/` で確認）
+- 静的ファイルを配るサーバーは、URLをフォルダーとファイルの場所として扱う。`/search/` なら `search/index.html` がそのまま見つかり、転送をはさまない。そのため `action` も `/search/` と書く
+
+### 確認結果
+
+- 送信すると、アドレスバーが `/search/?q=赤坂` になり、入力欄の文字が残った（ページを読み直していない）
+
+---
+
+## 日時:2026-10-28 08:07 JST
+
+```
+段階2-2: URLの q を読んで表示する SearchResults.tsx を作る。useSearchParams でURLを読むところが難しい。
+```
+
+## 回答
+
+**2026-10-28 08:07 JST**
+
+---
+
+### 実装
+
+- `poc/app/search/SearchResults.tsx`（クライアントコンポーネント）
+  - `useSearchParams()`（`next/navigation`）でURLの入れ物を受け取り、`.get("q")` で値を出す
+  - `get()` の型は `string | null`。`(searchParams.get("q") ?? "").trim()` で、必ず文字列にそろえる
+  - `return q.length > 0 && <p>「{q}」の検索結果</p>;`
+- `poc/app/search/page.tsx`: `<Suspense fallback={<p>読み込み中...</p>}>` で `SearchResults` を囲む
+
+### 学んだこと
+
+- `useSearchParams` は「URLを読む専用の `useState`」のようなもの。値の置き場所がReactの中ではなくURLで、URLが変わると部品が呼び直される
+- `get()` の戻り値は、`?q=赤坂` なら `"赤坂"`、`?q=` なら `""`、`q` がなければ `null`
+- `A ?? B` は、`A` が `null` か `undefined` なら `B` を使う
+- `<Suspense>` で囲んだ部分は、ビルド時には `fallback` をHTMLに入れておき、ブラウザでURLが分かってから差し替える。ビルド時には、URLの `?q=` が決まっていないため
+
+### つまずいた点
+
+- `useSearchParams` を読み込んで、`useStateParams` と呼んでいた。名前付きの `export` は、同じ名前で使う
+- `return` を書かず、関数の中に直接 `{ q.length > 0 && <p>…</p>; }` と書いていた
+  - `{ }` は、JSXの中なら「値の埋め込み」。関数の中に直接書くと、ただの区切りのかたまり（`if` の後ろと同じ）で、作った `<p>` は捨てられる
+  - 部品は `return` したものだけを画面に出す
+
+---
+
+## 日時:2026-10-28 08:21 JST
+
+```
+return ( ... ) の中で parse のエラーが出ている。考え方は合っていても、文法（どう書くか）が身についていない。
+```
+
+## 回答
+
+**2026-10-28 08:21 JST**
+
+---
+
+### つまずいた点
+
+- `return ( q.length > 0 && <p>…</p>; )` と、かっこの中に `;` を書いていた
+  - `;` は文（命令）の終わりの印。`( )` は1つの値をまとめるかっこで、中には値を1つだけ入れる
+  - `return ( ... );` 全体で1つの命令なので、`;` は `)` の後ろに付ける
+
+### 学んだこと
+
+ここまでの部品は、次の形の組み合わせでできている。迷ったら、`SuggestBox` から同じ形の場所を探して見比べる。
+
+| 書きたいこと | 形 |
+| --- | --- |
+| 値に名前を付ける | `const 名前 = 値;` |
+| 部品が画面に出すもの | `return ( タグのかたまり );` |
+| JSXの中に値を埋め込む | `<p>{q}</p>` |
+| 条件が合うときだけ出す | `条件 && <タグ>` |
+| 出来事で何かする | `onClick={() => { 命令; 命令; }}` |
+
+### 進め方
+
+- 文法は、読むだけでなく、書いて間違いを直してもらうことで身につける（英語の文法問題と同じ）。以降は仕様と新しい形だけを受け取り、中身は自分で書く
+
+### 確認結果
+
+- devで「赤坂」を送信すると、「「赤坂」の検索結果」と出た。段階1・2が完了
+
+### 次のステップ
+
+段階3: `SearchResults` で、`q` が変わるたびにPagefindで検索し、件数を `console.log` で出す。
+
+- 新しい形: `useEffect(() => { ... }, [q])`、`useEffect` の中に作る `async` 関数と `await`、`try` / `catch`
+- 読み込みは `await import(/* webpackIgnore: true */ pagefindPath)`、検索は `await pagefind.search(q)` の `.results`
+- 確認: devでは失敗のメッセージが出る。ビルド後（http://localhost:1414/search/）は、「赤坂」で2件出るはず
+
+---
+
