@@ -13,7 +13,7 @@ export default function SearchResults() {
     async function runSearch() {
       try {
         const pagefindPath = "/pagefind/pagefind.js";
-        const pagefind = await import(/* webpackIgnore: true */ pagefindPath);
+        const pagefind = await import(/* webpackIgnore: true */ pagefindPath); // ビルド時には存在しないpagefind.jsを、ブラウザでの実行時に読み込ませる
 
         const search = await pagefind.search(q);
 
