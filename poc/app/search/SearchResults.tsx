@@ -10,7 +10,19 @@ export default function SearchResults() {
   useEffect(() => {
     if (q === "") return;
 
-    console.log(q);
+    async function runSearch() {
+      try {
+        const pagefindPath = "/pagefind/pagefind.js";
+        const pagefind = await import(/* webpackIgnore: true */ pagefindPath);
+
+        const search = await pagefind.search(q);
+
+        console.log("読み込めた", search.results.length);
+      } catch (error) {
+        console.log("読み込めなかった", error);
+      }
+    }
+    runSearch();
   }, [q]);
 
   return q.length > 0 && <p>「{q}」の検索結果</p>;
