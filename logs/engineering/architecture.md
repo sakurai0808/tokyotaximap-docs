@@ -1790,3 +1790,370 @@ return ( ... ) の中で parse のエラーが出ている。考え方は合っ�
 
 ---
 
+## 日時:2026-10-29 19:09 JST
+
+```
+問題3-1: q が変わったら console.log する（useEffect）。
+```
+
+## 回答
+
+**2026-10-29 19:09 JST**
+
+---
+
+### 実装
+
+- `useEffect(() => { ... }, [q]);` で、`q` が変わったときだけ実行する
+- `useEffect` の中の先頭で `if (q === "") return;` とし、`q` が空なら何もしない
+
+### 学んだこと
+
+- `useEffect` は、部品を画面に出したあとに、ブラウザでだけ実行したい処理を書く場所。2つめの引数で実行のタイミングが変わる
+
+| 書き方 | 実行されるタイミング |
+| --- | --- |
+| `useEffect(() => { ... })` | 部品が呼び直されるたびに毎回 |
+| `useEffect(() => { ... }, [q])` | 初回と、`q` が前回と違うときだけ |
+| `useEffect(() => { ... }, [])` | 初回だけ |
+
+- 同じ `return` でも、どの `{ }` の中に書くかで止まる範囲が変わる。`useEffect` の中なら処理だけを止め、部品の本体なら描画そのものを止める
+- 最初に条件を確かめて処理を打ち切る書き方を、早期リターン（ガード節）と呼ぶ。門番なので関数の一番上に置く
+- devでは、Strict Modeにより `useEffect` が2回実行されることがある。ビルド後は1回
+
+### つまずいた点
+
+- `[q]` を渡さなかったため、同じ語で送信しても毎回出た。`<Form>` の移動で部品が呼び直されるため
+- `if (q === "") return;` を部品の本体に書いていた。次に `useEffect` の中へ移したが、`console.log(q)` より後ろに置いたため、`q` が空でも空の行が出た。命令は上から順に実行される
+
+---
+
+## 日時:2026-10-29 19:21 JST
+
+```
+問題3-2: useEffect の中に async の関数を作り、pagefind.js を読み込む。失敗したら try / catch で受けて、コンソールに出す。
+```
+
+## 回答
+
+**2026-10-29 19:21 JST**
+
+---
+
+### 実装
+
+- `useEffect` の中に `async function runSearch() { ... }` を作り、すぐ下で `runSearch();` と呼ぶ。`useEffect` に渡す関数そのものには `async` を付けられないため
+- `try` の中で `await import(/* webpackIgnore: true */ pagefindPath)`、`catch (error)` で `console.log("読み込めなかった", error)`
+
+### 学んだこと
+
+- `await` は、すぐには終わらない処理（ファイルの読み込み、検索）が終わるのを待つ。`async` を付けた関数の中でしか使えない
+- `catch` が止めるのは、プログラムがそこで止まること（画面が壊れること）。ブラウザが自動で出す「404」の記録は消えない
+- 作ったのに使っていない変数には、注意（警告）が出る。`'pagefind' が宣言されていますが…ts(6133)` はTypeScript、`'error' is defined but never used.` はESLintから。エラーとは違い、ビルドは止まらない
+- 波線の色で注意とエラーを見分けにくいときは、マウスを乗せたときの説明や、「問題」パネル（`⇧` + `⌘` + `M`）のアイコンの形（エラーは丸に✕、警告は三角に！）で見分ける
+- `error` を使わないなら `catch {` と書ける。今回は失敗の理由を見たいので `console.log` に渡す
+
+### 確認結果
+
+- devでは `pagefind.js` が404になり、「読み込めなかった」が出た。画面は壊れず、「「赤坂」の検索結果」は残った
+
+---
+
+## 日時:2026-10-29 19:47 JST
+
+```
+問題3-3: pagefind.search(q) で検索し、件数を出す（ビルド後に確認）。
+```
+
+## 回答
+
+**2026-10-29 19:47 JST**
+
+---
+
+### 実装
+
+- `const search = await pagefind.search(q);` の `search.results.length` を `console.log` で出す
+
+### 確認結果
+
+- `npm run build` が通り（「Compiled successfully」）、ビルド後のページ（http://localhost:1414/search/）で件数が出た
+- 技術検証で気にしていた「Turbopackからの `pagefind.js` の読み込み」は、`webpackIgnore` で解決できた
+
+---
+
+## 日時:2026-10-29 19:51 JST
+
+```
+「Turbopackからの pagefind.js の読み込みは、webpackIgnore で解決できた」について、改めて解説してほしい。目の前の問題ばかりみて目的を忘れてしまった。
+```
+
+## 回答
+
+**2026-10-29 19:52 JST**
+
+---
+
+### 学んだこと
+
+- 目的は、検索結果の一覧を自前のUIで表示すること。検索の処理は、Pagefindが作る `pagefind.js` が受け持つ。自分のコードから読み込んで `search()` を呼ぶ
+- `npm run build` は、`next build`（Turbopackがコードを束ねて `out/` に書き出す）のあとに `pagefind`（HTMLを読んで索引と `out/pagefind/pagefind.js` を作る）を実行する。Turbopackが `import` をたどる時点では、`pagefind.js` はまだない
+- 仮にあっても束ねてはいけない。`pagefind.js` は、同じ `/pagefind/` フォルダーにある索引のファイルを読みに行く作りのため
+- `/* webpackIgnore: true */` は、Turbopackに「この `import()` は探さず、束ねず、そのまま残して」と伝える印。読み込みは、ブラウザで実行するときに起きる
+- ビルドで出力されたJavaScript（`out/_next/static/chunks/`）に、`import("/pagefind/pagefind.js")` がそのまま残っていることを確かめた
+- 置き換える前のComponent UIの `<Script src>` も、ブラウザが実行時に取りに行く同じ考え方。今回は `search()` を直接呼びたいので `import()` を使い、そのために `webpackIgnore` が必要だった
+
+| 環境 | 結果 | 分かったこと |
+| --- | --- | --- |
+| `npm run build` | 「Compiled successfully」 | Turbopackが読み込みを素通りさせた |
+| ビルド後（:1414） | 件数が出た | ブラウザが本物の `pagefind.js` を読み込み、検索できた |
+| dev（:3000） | 「読み込めなかった」 | devには `pagefind.js` がないので404。`catch` で受け止めた |
+
+---
+
+## 日時:2026-10-30 04:09 JST
+
+```
+問題4-1: 結果ごとのタイトル・抜粋・URLを取り出して、コンソールに出す。どう書くのかわからない。暗黙の any という注意も出ている。
+```
+
+## 回答
+
+**2026-10-30 04:10 JST**
+
+---
+
+### 実装
+
+- Pagefindはブラウザの検索APIの型を用意していないので、自分で2つ書く
+
+```ts
+type PagefindResultData = {
+  url: string;
+  excerpt: string;
+  meta: { title: string };
+};
+
+type PagefindResult = {
+  data: () => Promise<PagefindResultData>;
+};
+```
+
+- 全件の中身を `Promise.all` で同時に取り出す
+
+```ts
+const data: PagefindResultData[] = await Promise.all(
+  search.results.map((result: PagefindResult) => result.data()),
+);
+```
+
+### 学んだこと
+
+- 型を付けるときは `const 名前: 型 = 値;`。名前は自分で付け、`:` の後ろに型を書く
+- `() => 型` は関数の型（引数なしで呼べて、`型` を返す関数）。`Promise<型>` は「あとで `型` が届く約束」で、`await` すると中身になる
+- `.map()` で「1件」を「`data()` の処理」に変え、`await Promise.all(...)` で全部待って中身の配列にする
+- 暗黙の `any`: `import()` に変数のパスを渡したので `pagefind` は `any`。そこから取り出した `result` の型も分からず、黙って `any` になる。`(result: PagefindResult) =>` と型を付けて消す
+
+### つまずいた点
+
+- `const PagefindResultData[] = ...` と、型の名前を変数の名前の位置に書いていた
+- コードを直したのに、件数が出続けた。Pagefindのサーバーは `out/` の中のファイルを配るだけで、ソースを書き換えても `out/` は変わらない。**ビルド後の確認では、毎回ビルドし直す**（サーバーを止める → `npm run build` → `npx pagefind --site out --serve`）。devは保存のたびに自動で作り直す
+
+### 確認結果
+
+- 2件の配列がコンソールに出て、`url`、`meta.title`、`excerpt`（検索語が `<mark>` で囲まれている）が入っていた
+
+---
+
+## 日時:2026-10-30 04:28 JST
+
+```
+問題4-2: 結果を useState に入れて、タイトルとリンクを一覧で表示する。「set... で結果をstateに入れる」とはどういうことか。
+```
+
+## 回答
+
+**2026-10-30 04:40 JST**
+
+---
+
+### 実装
+
+- `const [results, setResults] = useState<PagefindResultData[]>([]);`
+  - 初期値の `[]` だけでは何の配列か分からないので、`<PagefindResultData[]>` と型を明示する
+  - 初期値を省くと `undefined` から始まり、`results.map` でエラーになる
+- `runSearch` の中で、`data` ができたあとに `setResults(data);`
+- 一覧は `poc/app/page.tsx` の記事一覧をお手本にし、`results.map((result) => <li key={result.url}>…)` で `<Link href={result.url}>{result.meta.title}</Link>` を並べる
+- 見出しと `<ul>` を `<section>` で包んで返す。部品が返せるのは1つのかたまりだけ
+
+### 学んだこと
+
+- `setResults(data);` は「Set results to data.」という命令文。関数の名前は `set`・`get`・`run` のように動詞で始めるのが慣例で、`( )` が「今これを実行して」の合図。`const data = ...;` は名詞を作る宣言
+
+| 名前 | 中身 | 作った場所 |
+| --- | --- | --- |
+| `results` | 結果の配列（全件） | `useState` |
+| `setResults` | `results` を入れ替える関数 | `useState` |
+| `result` | 結果の1件 | `.map((result) => ...)` の引数 |
+
+- 名前には、自分で決めたもの（`data`、state の `results`）と、Pagefindが決めたもの（`search.results`、`result.data()`、`meta.title`）がある。後者は変えられない。`search` は `any` なので、間違えてもTypeScriptは注意を出さない
+- `href="{result.url}"` と `" "` で囲むと、その文字そのものがリンク先になる。値を埋め込むときは `{ }` だけ。決まった文字を渡すときだけ `" "`
+- 開いたかっこと閉じたかっこは、必ず同じ数になる。かっこの上にカーソルを置くと、対になるかっこが示される
+
+### つまずいた点
+
+- `useState<PagefindResult[]>()`: 型が中身を取り出す前のもので、初期値もなかった
+- state と `runSearch` の中の変数が同じ `results` になる（シャドーイング）のを避けようとして、Pagefindが決めた `search.results` まで `search.data` に変えていた
+- `return` の中で、`setResults.map`、`(article) =>`、`key={results.url}`、`href="{result.url}"`、`Link` の `import` 忘れ、`&&` の後ろの `)` 忘れ。似た名前（`results`・`result`・`setResults`）の取り違えが中心
+
+### 確認結果
+
+- 「赤坂」で2件のタイトルがリンクとして並び、記事へ移動できた
+
+---
+
+## 日時:2026-11-01 01:19 JST
+
+```
+検索結果は表示されたが、検索ボックスが2つ表示される。
+```
+
+## 回答
+
+**2026-11-01 01:20 JST**
+
+---
+
+### 実装（段階5）
+
+- 自作の `SuggestBox` の入力欄と、同梱のComponent UIの `<pagefind-input>` が両方残っていたため。自前の一覧が動いたので、Component UIを外す
+  - `poc/app/search/page.tsx`: CSSの `<link>`、`<Script>` とその `import`、`<pagefind-input>`・`<pagefind-summary>`・`<pagefind-results>`
+  - `poc/types/pagefind.d.ts`（上のタグの型）を削除
+- 外さないもの: 記事ページの `data-pagefind-body` などの印と、`package.json` の `build` の `pagefind`。どちらも索引を作るためで、自前の一覧も使う
+
+### 確認結果
+
+- 検索ボックスが1つになり、「赤坂」で2件出た。ビルドも通った
+
+---
+
+## 日時:2026-11-01 01:31 JST
+
+```
+問題4-3a: 抜粋を表示する。<p dangerouslySetInnerHTML={{ __html: {result.excerpt} }} /> と書くということか。
+```
+
+## 回答
+
+**2026-11-01 01:38 JST**
+
+---
+
+### 実装
+
+- `<p dangerouslySetInnerHTML={{ __html: result.excerpt }} />`
+
+### 学んだこと
+
+- Reactは、`{ }` に埋め込んだ文字列をHTMLではなく文字として表示する。`<mark>` も文字のまま出る。紛れ込んだ `<script>` を実行させないための安全の仕組み
+- `dangerouslySetInnerHTML` は、文字列をHTMLとして表示する専用の属性。危険なのは自分が管理していないHTMLを表示するとき。Pagefindの抜粋は自分の記事から作られ、付け足されるのは `<mark>` だけなので使ってよい
+- `{ }` の意味は、書いている場所で変わる
+
+| 書いている場所 | `{ }` の意味 |
+| --- | --- |
+| JSXの世界（タグや属性） | 「ここからJavaScriptの値を書きます」という入り口 |
+| JavaScriptの世界（入り口の内側） | オブジェクト（`{ 名前: 値 }` の入れ物） |
+
+- `{{ __html: result.excerpt }}` は、外側が入り口、内側がオブジェクト。すでにJavaScriptの世界にいるので、`result.excerpt` を `{ }` で囲む必要はない
+
+### つまずいた点
+
+- `{{ __html: {result.excerpt} }}` と書きかけた。JavaScriptの世界に入っているのに、もう一度入り口を通ろうとしていた
+
+### 確認結果
+
+- 抜粋が文章として表示され、検索語の部分だけが目立った
+
+---
+
+## 日時:2026-11-01 01:43 JST
+
+```
+問題4-3b: 検索中と0件の表示を作る。検索中のときはどう書くのか。
+```
+
+## 回答
+
+**2026-11-01 01:56 JST**
+
+---
+
+### 決定
+
+- `results` が `[]` のときに「検索中」か「0件」かは区別できない。「検索が始まった」「終わった」は出来事でしか決まらないので、`isLoading` のstateを足す
+- 初期値は `true`（検索する前は検索中とみなす）。`false` にすると、`?q=` 付きでページを開いた直後、`useEffect` が動く前の一瞬に「見つかりませんでした」が出てしまう
+
+### 実装
+
+- `runSearch` の先頭で `setIsLoading(true)`（2回目以降の検索のため）、`finally` で `setIsLoading(false)`
+- 表示は、フックより下で早期リターンを並べる
+
+```tsx
+if (q === "") return null;
+if (isLoading) return <p>検索中...</p>;
+if (results.length === 0) return <p>…見つかりませんでした。</p>;
+return ( 一覧 );
+```
+
+### 学んだこと
+
+- `finally` は、成功しても失敗しても、最後に必ず実行される
+- `isLoading` は今の値を読む（"Is it loading?"）。`setIsLoading(true)` は値を変える命令（"Set it to loading."）。`if ( )` の中には、はいかいいえで答えられるもの（真偽値）を入れるので、`if (isLoading)` でよい
+- stateを変える命令は、`onClick` や `useEffect` の中など、出来事が起きたときにだけ書く。描画の途中で書くと「変える → 呼び直す → また変える」と繰り返し、Reactがエラーで止まる
+- 早期リターンは、`useState` と `useEffect` より下に書く。フックは毎回同じ順番で必ず呼ばれる必要がある
+
+### つまずいた点
+
+- 検索中の条件を `if (q === setIsLoading(true))` と書いていた。読むことと変えることの区別
+
+---
+
+## 日時:2026-11-01 02:12 JST
+
+```
+「赤坂」で検索ボタンを押すと出なかったが、/search/ にURLを戻してから検索したら出た。
+「なああああ」と打つと記事が2件出る。「銀座」なら「見つかりませんでした」と出る。
+```
+
+## 回答
+
+**2026-11-01 02:13 JST**
+
+---
+
+### 確認結果
+
+- `SearchResults.tsx` は仕様どおりに動いている。最初に決めた次のステップ（検索ボタンかEnterで、Pagefind JS APIの結果を自前UIで一覧表示する。同梱のComponent UIを外す）がそろった
+- 「赤坂」で出なかったのは、ビルドし直す前のタブを開いたままにしていたためと考えられる。`<Form>` や `<Link>` の移動は今読み込まれているJavaScriptのまま進むので、古いコードで動き続ける。**ビルドし直したら、`⌘` + `⇧` + `R` でページを読み直してから確認する**
+- 「なああああ」では、抜粋の「な」と「ない」に `<mark>` が付いた。Pagefindが検索語を区切り、その中の「な」が前方一致で「な」「ない」に当たったように見える（赤坂通り:「このような文言は使わない」、キャピトルホテル東急:「車体を擦らないように」）
+- 「キャピトル」では1件出た
+- 「銀座」が0件なのは、2本の記事に「銀」も「座」も出てこないため
+
+![「なああああ」の検索結果](<../ai/images/スクリーンショット 2026-11-01 2.09.55.png>)
+
+### 未確認の疑問（追加）
+
+- 「なああああ」が「な」「ない」に一致する件は、検索語「2024」が本文の「2」に一致する件と同じ種類の挙動。Pagefindの日本語の区切り方と前方一致の扱いとして、あわせて調べる（Playground: http://localhost:1414/pagefind/playground/）
+
+### 感想
+
+- 検索は奥が深い。仕事中に「早く調べなきゃ」というときや、「このサイトの検索は便利」と感じるときがある。Reactの公式ドキュメントは、入力している間にサジェストが出て使いやすい
+- 日本語は、かな漢字変換の前にひらがな（ローマ字）である程度打ち込んでからでないとサジェストが出ないのが惜しいところ
+
+### 次のステップ
+
+- `docs/` への反映（`docs/engineering/architecture.md` の検索の節と「次のステップ」）
+- 次の候補: ピンマップ（Leaflet）、front matterの `slug` とファイル名の一致チェック、Pagefindの日本語の区切り方の調査
+
+---
+
