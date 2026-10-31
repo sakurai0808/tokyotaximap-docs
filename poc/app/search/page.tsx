@@ -1,8 +1,6 @@
-import Script from "next/script";
-
 import { getSuggestItems } from "@/lib/articles";
 import SuggestBox from "@/app/search/SuggestBox";
-import SearchResults from "@/app/search//SearchResults";
+import SearchResults from "@/app/search/SearchResults";
 import { Suspense } from "react";
 
 export default function SearchPage() {
@@ -10,14 +8,8 @@ export default function SearchPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <link rel="stylesheet" href="/pagefind/pagefind-component-ui.css" />
-      <Script src="/pagefind/pagefind-component-ui.js" type="module" />
-
       <h1 className="mb-6 text-2xl font-bold">検索</h1>
       <SuggestBox items={items} />
-      <pagefind-input placeholder="施設名・通称・地名で検索"></pagefind-input>
-      <pagefind-summary></pagefind-summary>
-      <pagefind-results></pagefind-results>
       <Suspense fallback={<p>読み込み中...</p>}>
         <SearchResults />
       </Suspense>
