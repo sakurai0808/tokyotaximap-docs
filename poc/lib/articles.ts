@@ -33,20 +33,20 @@ export type ArticleSummary = {
   updatedAt: string;
 };
 
-// 記事を読み込み、型が合っていなければビルドを中止する
+// 記事を読み込み、型が合っていなければビルドを中止する。frontMatterの作成
 function readArticleFile(slug: string) {
   const filePath = path.join(articlesDir, `${slug}.md`);
   const raw = fs.readFileSync(filePath, "utf8");
   const { data, content } = matter(raw);
 
-  const result = articleSchema.safeParse(data);
+  const result = articleSchema.safeParse(data); // Zodで検証
   if (!result.success) {
     throw new Error(
       `${slug}.md のfront matterが不正です\n${z.prettifyError(result.error)}`, // prettifyErrorで、人が読みやすい文字列にする
     );
   }
 
-  return { frontMatter: result.data, content };
+  return { frontMatter: result.data, content }; // 検証済みのデータに「frontMatter」という名前をつけて、本文(content)と一緒にオブジェクトとして返す
 }
 
 // 記事のスラッグ、タイトルを返す関数
@@ -103,4 +103,35 @@ export function getSuggestItems(): SuggestItem[] {
       keywords: frontMatter.keywords,
     };
   });
+}
+
+// ピンマップ用の型を定義
+export type PinmapItem = {
+  slug: string;
+  title: string;
+  category: string;
+  location: { lat: number; lng: number };
+  summary: string;
+};
+
+// ピンマップに必要なデータを集める関数
+export function getPinmapItems(): PinmapItem[] {
+  const pinmapItemList: PinmapItem[] = [];
+
+  for (const slug of getAllSlugs()) {
+    const { frontMatter } = readArticleFile(slug);
+
+    if (frontMatter.pinmap) {
+      pinmapItemList.push({
+        // 必要な項目だけで作ったオブジェクトを追加する
+        slug,
+        title: frontMatter.title,
+        category: frontMatter.category,
+        location: frontMatter.location,
+        summary: frontMatter.summary,
+      });
+    }
+  }
+
+  return pinmapItemList;
 }
