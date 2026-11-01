@@ -1,4 +1,7 @@
+<!-- ザ・キャピトルホテル東急 -->
+
 ---
+
 title: ザ・キャピトルホテル東急
 slug: the-capitol-hotel-tokyu
 publishedAt: 2024-04-15
@@ -6,16 +9,18 @@ updatedAt: 2026-07-20
 category: 施設
 city: [千代田区]
 keywords:
-  - キャピトルホテル
-  - キャピトルホテル東急
-  - 赤坂東急ホテル
-tags: []
-thumbnail: /images/articles/the-capitol-hotel-tokyu.png
-pinmap: true
-location:
+
+- キャピトルホテル
+- キャピトルホテル東急
+- 赤坂東急ホテル
+  tags: []
+  thumbnail: /images/articles/the-capitol-hotel-tokyu.png
+  pinmap: true
+  location:
   lat: 35.673898
   lng: 139.741400
-summary: 車寄せへの入口は2つあります。両方とも右左折で進入可能です。
+  summary: 車寄せへの入口は2つあります。両方とも右左折で進入可能です。
+
 ---
 
 ## 住所
