@@ -5,6 +5,7 @@
 // Leaflet関連
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 import type { PinmapItem } from "@/lib/articles";
 
@@ -26,6 +27,18 @@ const categoryColors: Record<Category, string> = {
   その他お役立ち知識: "#7F7F7F",
 };
 
+// ピンのアイコンをつくる関数
+function createPinIcon(category: Category) {
+  const categoryColor = categoryColors[category];
+
+  return L.divIcon({
+    html: `<div class="h-6 w-6 rounded-full border-2 border-white" style="background-color: ${categoryColor}"></div>`,
+    className: "pinmap-icon", // 独自の名前(クラス)をつけないとLeaflet標準のデザインがついてしまう
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+}
+
 export default function Pinmap({ items }: { items: PinmapItem[] }) {
   return (
     <MapContainer center={[35.6812, 139.7671]} zoom={13} className="h-[500px]">
@@ -34,7 +47,11 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
         attribution='<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>' // 地理院タイル(淡色地図)
       />
       {items.map((item) => (
-        <Marker key={item.slug} position={item.location}>
+        <Marker
+          key={item.slug}
+          position={item.location}
+          icon={createPinIcon(item.category)}
+        >
           <Popup>
             <strong>{item.title}</strong>
             <p>{item.summary}</p>
