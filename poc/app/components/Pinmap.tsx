@@ -13,26 +13,27 @@ import Link from "next/link";
 
 import type { Category } from "@/lib/schema"; // カテゴリの型をインポート
 
-const categoryColors: Record<Category, string> = {
-  // すべてのカテゴリをキーに持ち、値は文字列
-  幹線道路: "#7F7F7F",
-  交差点: "#D55E00",
-  主要駅: "#0072B2",
-  施設: "#E69F00",
-  通称がある道: "#CC79A7",
-  "抜け道・定番ルート": "#56B4E9", // 「・」を含んでいるため、""で囲まないとエラーになる可能性がある
-  首都高: "#009E73",
-  タクシー基礎: "#7F7F7F",
-  主要エリア解説: "#7F7F7F",
-  その他お役立ち知識: "#7F7F7F",
+const categoryStyles: Record<Category, { color: string; label: string }> = {
+  // すべてのカテゴリをキーに持ち、値は色とラベルの組
+  幹線道路: { color: "#7F7F7F", label: "幹" },
+  交差点: { color: "#D55E00", label: "交" },
+  主要駅: { color: "#0072B2", label: "駅" },
+  施設: { color: "#E69F00", label: "施" },
+  通称がある道: { color: "#CC79A7", label: "通" },
+  "抜け道・定番ルート": { color: "#56B4E9", label: "抜" }, // 「・」を含んでいるため、""で囲まないとエラーになる可能性がある
+  首都高: { color: "#009E73", label: "首" },
+  タクシー基礎: { color: "#7F7F7F", label: "基" },
+  主要エリア解説: { color: "#7F7F7F", label: "エ" },
+  その他お役立ち知識: { color: "#7F7F7F", label: "他" },
 };
 
 // ピンのアイコンをつくる関数
 function createPinIcon(category: Category) {
-  const categoryColor = categoryColors[category];
+  const categoryColor = categoryStyles[category].color; // 2段で項目を取り出す
+  const categoryLabel = categoryStyles[category].label;
 
   return L.divIcon({
-    html: `<div class="h-6 w-6 rounded-full border-2 border-white" style="background-color: ${categoryColor}"></div>`,
+    html: `<div class="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-black" style="background-color: ${categoryColor}">${categoryLabel}</div>`,
     className: "pinmap-icon", // 独自の名前(クラス)をつけないとLeaflet標準のデザインがついてしまう
     iconSize: [24, 24],
     iconAnchor: [12, 12],
