@@ -1,7 +1,4 @@
-<!-- 西麻布~根津美術館 -->
-
 ---
-
 title: 西麻布~根津美術館
 slug: nishiazabu-to-nezumuseum
 publishedAt: 2022-05-10
@@ -9,18 +6,16 @@ updatedAt: 2024-09-12
 category: 抜け道・定番ルート
 city: [港区]
 keywords:
-
-- 西麻布
-- 根津美術館
-- 北海園
-  tags: []
-  thumbnail: /images/articles/nishiazabu-to-nezumuseum.png
-  pinmap: true
-  location:
+  - 西麻布
+  - 根津美術館
+  - 北海園
+tags: []
+thumbnail: /images/articles/nishiazabu-to-nezumuseum.png
+pinmap: true
+location:
   lat: 35.66203090011344
   lng: 139.7197822606845
-  summary: 表参道と西麻布を行き来する時の定番の抜け道です。西麻布から進む方向は、中華屋「北海園」が曲がる目印です。
-
+summary: 表参道と西麻布を行き来する時の定番の抜け道です。西麻布から進む方向は、中華屋「北海園」が曲がる目印です。
 ---
 
 ## 基本事項

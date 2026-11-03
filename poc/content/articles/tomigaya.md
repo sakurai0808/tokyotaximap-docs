@@ -1,7 +1,4 @@
-<!-- 富ヶ谷 -->
-
 ---
-
 title: 富ヶ谷(交差点)
 slug: tomigaya
 publishedAt: 2024-10-06
@@ -13,10 +10,9 @@ tags: []
 thumbnail: /images/articles/tomigaya.png
 pinmap: true
 location:
-lat: 35.667833396825976
-lng: 139.68792018795844
+  lat: 35.667833396825976
+  lng: 139.68792018795844
 summary: 山手通りと井の頭通りの交差点です。
-
 ---
 
 ## 交差する主な通り

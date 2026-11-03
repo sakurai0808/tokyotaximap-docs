@@ -1,7 +1,4 @@
-<!-- 東京駅(八重洲口) -->
-
 ---
-
 title: 東京駅(八重洲口)
 slug: tokyostation-yaesu
 publishedAt: 2022-12-05
@@ -9,19 +6,17 @@ updatedAt: 2026-05-25
 category: 主要駅
 city: [千代田区]
 keywords:
-
-- 八重洲口
-- 八重洲ロータリー
-- 八重洲口降車場
-- 大丸
-  tags: [東京駅, 新幹線]
-  thumbnail: /images/articles/tokyostation-yaesu.png
-  pinmap: true
-  location:
+  - 八重洲口
+  - 八重洲ロータリー
+  - 八重洲口降車場
+  - 大丸
+tags: [東京駅, 新幹線]
+thumbnail: /images/articles/tokyostation-yaesu.png
+pinmap: true
+location:
   lat: 35.68102297837744
   lng: 139.76889724326486
-  summary: 車寄せ…あり　外堀通りの呉服橋交差点向き、左側にあります
-
+summary: 車寄せ…あり　外堀通りの呉服橋交差点向き、左側にあります
 ---
 
 ## 住所
