@@ -8,6 +8,8 @@ import "leaflet/dist/leaflet.css";
 
 import type { PinmapItem } from "@/lib/articles";
 
+import Link from "next/link";
+
 export default function Pinmap({ items }: { items: PinmapItem[] }) {
   return (
     <MapContainer center={[35.6812, 139.7671]} zoom={13} className="h-[500px]">
@@ -20,6 +22,18 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
           <Popup>
             <strong>{item.title}</strong>
             <p>{item.summary}</p>
+            <div>
+              {/* GoogleMapのリンクボタン */}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GoogleMapで確認
+              </a>
+              {/* タクマップ記事リンクボタン */}
+              <Link href={`/${item.slug}/`}>解説記事を見る</Link>
+            </div>
           </Popup>
         </Marker>
       ))}
