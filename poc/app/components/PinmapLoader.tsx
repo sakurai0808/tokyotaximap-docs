@@ -1,3 +1,5 @@
+// page.tsxとPinmap.tsxの中継役。クライアントコンポーネントをはさむことで「ssr: false」を記述できる
+
 "use client";
 
 import dynamic from "next/dynamic";

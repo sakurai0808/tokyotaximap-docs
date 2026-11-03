@@ -2,14 +2,19 @@
 
 import Link from "next/link";
 import { getArticleSummaries } from "@/lib/articles";
+import { getPinmapItems } from "@/lib/articles";
+import PinmapLoader from "./components/PinmapLoader";
 
 // ユーザーがトップ(/)にアクセスしたときに実行
 export default function Home() {
   const articles = getArticleSummaries(); // 中身はオブジェクト
 
+  const pinmapItems = getPinmapItems();
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-6 text-2xl font-bold">東京都心タクマップ PoC</h1>
+      <PinmapLoader items={pinmapItems} />
       <ul className="list-disc space-y-2 pl-6">
         {articles.map((article) => (
           <li key={article.slug}>
