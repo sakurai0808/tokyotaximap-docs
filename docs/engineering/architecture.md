@@ -3,7 +3,7 @@
 ## 採用技術
 
 - フレームワーク: Next.js
-- ピンマップ: Leaflet
+- ピンマップ: Leaflet（react-leaflet）。ベースマップは地理院タイル（淡色地図）
 - コンテンツ: Markdown（Git管理）
 - 全文検索: Pagefind
 
@@ -141,11 +141,58 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 
 `pinmap: true` の記事のみピンマップに掲載する。位置情報はfront matterの `location`（`lat`, `lng`）に保持する。ポップアップ概要文は `summary` を使用する。
 
+カテゴリごとの掲載の目安は [機能要件](../requirements/features.md#ピンマップ) にあるが、スキーマではカテゴリと `pinmap` の組み合わせを制限しない。「抜け道・定番ルート」のように同じカテゴリの中で分かれるものがあるため、記事ごとの `pinmap` を正とする。
+
+#### ピンマップ
+
+構成（PoC）:
+
+- `poc/lib/articles.ts` の `getPinmapItems()`: 全記事から `pinmap: true` のものだけを選び、`slug`・`title`・`category`・`location`・`summary` を集める。`pinmap` で型が絞り込まれるので、`if (frontMatter.pinmap)` の中でだけ `location`・`summary` を使える
+- `poc/app/page.tsx`（サーバーコンポーネント）: `getPinmapItems()` を呼び、`PinmapLoader` にpropsで渡す
+- `poc/app/components/PinmapLoader.tsx`（クライアントコンポーネント）: `next/dynamic` で `Pinmap` を `ssr: false` で読み込み、`items` を渡すだけの中継役
+- `poc/app/components/Pinmap.tsx`（クライアントコンポーネント）: Leafletの本体。地図、ピン、ポップアップ
+
+中継役を挟むのは、`page.tsx` が `fs` で記事を読むためサーバーで動かす必要がある一方、`ssr: false` はサーバーコンポーネントに書けないため（同梱ドキュメント `lazy-loading.md`: 「`ssr: false` is not allowed with `next/dynamic` in Server Components.」）。
+
+静的エクスポートでは、書き出されるHTMLに地図は入らず、`loading` の表示（「地図を読み込んでいます...」）だけが入る。ブラウザで `Pinmap` を読み込んでから地図を組み立てる。`npm run build` → `npx pagefind --site out --serve` で動作を確認済み。
+
+ポップアップ:
+
+- `title`、`summary`、Googleマップへのリンク、記事へのリンク
+- Googleマップ: `https://www.google.com/maps/search/?api=1&query={lat},{lng}`。外部サイトなので `<a target="_blank" rel="noopener noreferrer">` で新しいタブ
+- 記事: `next/link` の `<Link href="/{slug}/">` で同じタブ。ルート相対パスにして、dev・Pagefindの確認用サーバー・本番のどこでも、同じサイトの記事へ移動できるようにする
+
+ベースマップ:
+
+地理院タイルの淡色地図（`https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png`）を使う。出典として「地理院タイル」と、[地理院タイル一覧](https://maps.gsi.go.jp/development/ichiran.html)へのリンクを表示する。
+
+選定理由:
+
+- 参考にしたsample-mapのCARTO Basemaps（voyager）は、利用条件（2026年9月29日版）でAPIキー必須になった。キーなしでは「API KEY REQUIRED」の画像が返る。無料枠は非商用で月500万リクエスト、商用で月100万リクエストまでで、超えると有料
+- 地理院タイルは、ウェブサイトでリアルタイムに読み込む場合、出典の明示のみで申請不要。料金が発生しない
+- 地名が日本語で、国道・都道の番号が出る。淡色地図は色付きのピンが目立つ
+- 公的なデータを使っておくと、将来の提供・連携の可能性が開けたときに都合がよい
+
+気になる点: Voyagerほど洗練されていない、通りの名前は出にくい、稼働の保証（SLA）はない。
+
+OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り替えて選べる2番目の地図として検討する（利用方針上、アクセスの多いサービスでの常用は控える）。Googleのタイルを正式なAPIを通さずに直接読み込むのは、規約上認められていないため使わない。
+
+ピン:
+
+`L.divIcon` の自前のアイコンにする。Leaflet標準のピンは、バンドラーを通すと画像のパスが壊れる（PoCでも壊れた画像になった）。見た目のルールは [UI・UX設計](../design/ui-ux.md#ピンの表示) を参照。
+
+- `html` はJSXではなくHTMLの文字列（`class`、属性はスペース区切り）。形はTailwindのクラス、色は `style` で渡す。Tailwindはファイルにそのまま書かれたクラス名しか生成しないため、`bg-[${色}]` のようにクラス名を組み立てない
+- `className` に独自の名前を付ける。付けないとLeaflet標準の白い四角い背景が出る
+- `iconSize: [24, 24]`、`iconAnchor: [12, 12]`（丸の中心を座標に合わせる。単位はピクセル）
+- 色とラベルは `Record<Category, { color: string; label: string }>` の対応表で持つ（`Category` は `schema.ts` の `categories` から作る）。全カテゴリが必須なので、カテゴリを増やして書き漏らすと型エラーで気づける
+
 ## 次のステップ
 
-PoC（`poc/`）で、記事2本（施設・`pinmap: true`、幹線道路・`pinmap: false`）のMarkdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）まで確認した。続けて次を行う。
+PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`）。続けて次を行う。
 
-- ピンマップ（Leaflet。`pinmap: true` の記事をピンで表示し、ポップアップに `summary`）
+- ピンマップのクラスタリング、サイドバー、カテゴリの絞り込みを入れるかどうかの判断（記事数の見込みから）
+- ピンマップのレイアウト（トップページのファーストビュー、PC・TB・SP）、ポップアップのリンクの見た目
+- ベースマップの切り替え（OpenStreetMap）
 - front matterの `slug` とファイル名の一致チェック（必要に応じて）
 - Pagefindの日本語の区切り方と前方一致の確認（検索語「2024」が本文の「2」に、「なああああ」が「な」「ない」に一致する理由）
 
@@ -155,6 +202,8 @@ PoC（`poc/`）で、記事2本（施設・`pinmap: true`、幹線道路・`pinm
 - ホスティング・デプロイ・監視
 - ミニ単語帳のデータ形式とPagefindへの載せ方
 - 地図埋め込みの方式
+- ピンマップのクラスタリング、サイドバー、カテゴリの絞り込みの要否
+- ベースマップの本番での最終決定（PoCは地理院タイル。OpenStreetMapとの切り替えを検討）
 
 ## Q&A（検討ログ）
 

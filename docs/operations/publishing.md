@@ -14,6 +14,7 @@
 
 ## front matterの運用
 
+- front matterはファイルの1行目の `---` から書き始める。前にコメント（`<!-- -->`）などを置くと、front matterとして読み込まれずビルドが止まる。保存時の自動整形でYAMLのインデントも崩れる。見出しが欲しいときは、front matterの中にYAMLのコメント（`# 赤坂通り`）を書く
 - 必須キー・条件付きキーは [コンテンツモデル・編集方針](../design/content-model.md#メタデータfront-matter) を参照。
 - `publishedAt` / `updatedAt` は全記事で必須（`YYYY-MM-DD`）。表示の正はfront matterとし、Gitのコミット日は使わない。
 - 本文を実質更新したら `updatedAt` を進める。

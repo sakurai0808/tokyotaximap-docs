@@ -2157,3 +2157,551 @@ return ( 一覧 );
 
 ---
 
+## 日時:2026-11-01 02:36 JST
+
+```
+次のステップ: ピンマップ。過去に作ったsample-map（https://github.com/sakurai0808/sample-map）にならって作りたい。まずsample-mapのコードを読み、「そのまま使える部分」と「変えるべき部分」を整理してから、進め方を説明してほしい。
+```
+
+## 回答
+
+**2026-11-01 02:45 JST**
+
+---
+
+### 整理: そのまま使える部分
+
+- ライブラリ: `leaflet`、`react-leaflet` 5、`@types/leaflet`（PoCはReact 19.2.4で条件を満たす）
+- `MapContainer`・`TileLayer`・`Marker`・`Popup` の組み立て方。中心（東京駅）とズーム13
+- `L.divIcon` の自前のピン。Leaflet標準のピンは、バンドラーを通すと画像のパスが壊れやすい
+- ポップアップの構成（名前、説明文、Googleマップのボタン、記事のボタン）と、GoogleマップのURL（`https://www.google.com/maps/search/?api=1&query=緯度,経度`）
+
+### 整理: 変えるべき部分
+
+- データの出どころ: `app/data/points/*.ts` の手書きではなく、記事のfront matterから集める。記事とピンの情報がずれなくなる（`id` → `slug`、`name` → `title`、`pos` → `location`、`description` → `summary`、`articleUrl` → `/{slug}/`）
+- サーバーとクライアントの分け方: sample-mapは `page.tsx` 全体が `"use client"`。PoCでは `fs` を使うため、`page.tsx` はサーバーコンポーネントのままにする。同梱ドキュメント（`node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`）に「`ssr: false` is not allowed with `next/dynamic` in Server Components. Please move it into a Client Component.」とあるので、間にクライアントの部品を1枚挟む
+- カテゴリと色の対応: sample-mapの `{ [key: string]: ... }` は書き漏らしに気づけない。`schema.ts` の `categories` から型を作り、`Record` にする
+- 記事へのリンク: 外部サイトへの `<a target="_blank">` ではなく、`next/link` で同じタブ
+- 著作権の表示: CARTOのタイルはOpenStreetMapのデータを使うので、「© OpenStreetMap contributors」も必要
+- 後回し: クラスタリング、サイドバー、カテゴリの絞り込み、FontAwesome。`ChangeView` が描画の途中で `map.setView` を呼ぶ点（本来は `useEffect`）、`renderToStaticMarkup` をブラウザに持ち込む点も、その段階で扱う
+
+### 決定
+
+- 3段の構成にする
+
+```text
+app/page.tsx（サーバー）              getPinmapItems() でデータを集め、propsで渡す
+  └ PinmapLoader.tsx（クライアント）  dynamic(..., { ssr: false }) を置くだけ
+      └ Pinmap.tsx（クライアント）    Leafletの本体（sample-mapの Map.tsx にあたる）
+```
+
+- 部品の名前は `Map` ではなく `Pinmap`（JavaScript標準の `Map` と紛らわしいため）
+
+### 進め方
+
+1. データ: `getPinmapItems()`
+2. 薄いクライアント部品: `PinmapLoader.tsx`
+3. 地図本体（最小）
+4. トップページに置く
+5. 静的エクスポートの確認
+6. ピンの見た目（`divIcon` とカテゴリ別の色）
+7. レイアウト、クラスタリングなどの判断
+
+---
+
+## 日時:2026-11-01 09:01 JST
+
+```
+pinmapがtrueのカテゴリはどれ、って設定したっけ?
+```
+
+## 回答
+
+**2026-11-01 09:02 JST**
+
+---
+
+### 確認結果
+
+- カテゴリごとの目安は `docs/requirements/features.md` の「ピンマップ」にある（交差点、主要駅、施設、抜け道のみ、通称がある道、首都高の出入口）。`docs/design/content-model.md` にも、「抜け道・定番ルート」の中での分け方がある
+- スキーマ（`poc/lib/schema.ts`）では、カテゴリとの組み合わせを制限していない。「幹線道路」で `pinmap: true` の記事も検証を通る
+- 「抜け道・定番ルート」のように同じカテゴリの中で分かれるものがあるので、記事ごとの `pinmap` が正式な判断基準で、カテゴリは書く人向けの目安という役割分担
+
+### 決定
+
+- カテゴリと色の対応表は、目安の6カテゴリだけでなく全11カテゴリについて作る（目安から外れた記事が来ても色が決まるように）
+
+---
+
+## 日時:2026-11-01 13:34 JST
+
+```
+問題1: lib/articles.ts に getPinmapItems() を作る。
+だめだ、わけわかんなくなってきた笑、教えてください
+（その後）frontMatter ってどこで作ったものだっけ...
+オブジェクトって何回も出てくるけど、これがオブジェクト指向というやつ?
+```
+
+## 回答
+
+**2026-11-01 14:17 JST**
+
+---
+
+### 実装
+
+```ts
+export type PinmapItem = {
+  slug: string;
+  title: string;
+  category: string;
+  location: { lat: number; lng: number };
+  summary: string;
+};
+
+export function getPinmapItems(): PinmapItem[] {
+  const pinmapItemList: PinmapItem[] = [];
+
+  for (const slug of getAllSlugs()) {
+    const { frontMatter } = readArticleFile(slug);
+
+    if (frontMatter.pinmap) {
+      pinmapItemList.push({
+        slug,
+        title: frontMatter.title,
+        category: frontMatter.category,
+        location: frontMatter.location,
+        summary: frontMatter.summary,
+      });
+    }
+  }
+
+  return pinmapItemList;
+}
+```
+
+### 学んだこと
+
+- `map` は「1個入れたら1個出る」。`pinmap: false` の記事を捨てることはできないので、「空の箱を用意 → 1本ずつ取り出す → 条件に合えば `push` → 箱を返す」の手順で書く
+- `if (frontMatter.pinmap)` の `{ }` の中でだけ、TypeScriptは `pinmap: true` の記事だとわかり、`location` と `summary` を使わせてくれる（判別可能なユニオン型の絞り込み）
+- オブジェクトの `{ }` の中に書けるのは `キー: 値,` の並びだけ。`if` は文なので、関数の本体に書く
+- `push( )` のかっこは「箱に入れる物を渡す口」。オブジェクトを入れるときは `push({ ... })` とかっこが2重になる
+- `frontMatter` が生まれるのは `readArticleFile` の `return { frontMatter: result.data, content }`。ファイルを読む → `matter` でfront matterと本文に分ける → Zodで検証 → 名前を付けて返す、の流れ。受け取る側の `const { frontMatter } = ...` は分割代入
+- オブジェクトはデータの形（名前の付いた値のまとまり）。オブジェクト指向は、データと処理をクラスにまとめて組み立てる考え方で、別物。PoCは、データはただの入れ物、処理は関数、という作り方。`配列.push()` や、Leafletの `map.setView()` のような `オブジェクト.メソッド()` は、「そのオブジェクトに仕事を頼む」と読めばよい
+
+### つまずいた点
+
+- `map` の形を残したまま、その中に `for` を入れていた。`for` は `map` の代わり
+- 作ったばかりの空の箱を `for` で回していた（取り出す元は `getAllSlugs()`）
+- `push()` のかっこが空で、オブジェクトを `return` に書いていた。`push(` の中に `{ }` で包まずに `キー: 値` を並べていた
+- `location` の型を `number` にしていた（`{ lat, lng }` のオブジェクト）
+
+---
+
+## 日時:2026-11-01 14:51 JST
+
+```
+問題2: 地図なしで、データの通り道だけを先に作る（Pinmap.tsx は仮でタイトルを並べる、PinmapLoader.tsx、page.tsx）。
+ぐぬぬ。ひとつずついきましょう。問題2-1、流れがよくわかりません。
+（その後）この部品自身の関数...?
+（その後）なにをどう受け渡してるかわけわからんくなってきた
+```
+
+## 回答
+
+**2026-11-03 09:45 JST**
+
+---
+
+### 決定
+
+- 先に地図なしで、サーバーからクライアントまでデータが届くことを確かめる。いきなりLeafletを入れると、うまくいかなかったときに原因が「データの渡し方」か「Leaflet」か分からなくなるため
+- 部品は `app/components/` に置く（`page.tsx` がないフォルダはページにならない）
+
+### 実装
+
+```tsx
+// app/components/PinmapLoader.tsx
+"use client";
+
+import dynamic from "next/dynamic";
+import type { PinmapItem } from "@/lib/articles";
+
+const Pinmap = dynamic(() => import("./Pinmap"), {
+  ssr: false,
+  loading: () => <p>地図を読み込んでいます...</p>,
+});
+
+export default function PinmapLoader({ items }: { items: PinmapItem[] }) {
+  return <Pinmap items={items} />;
+}
+```
+
+- `app/page.tsx`: `const pinmapItems = getPinmapItems();` を呼び、記事一覧の上に `<PinmapLoader items={pinmapItems} />` を置く
+
+### 学んだこと
+
+- `Pinmap` は、データを集める係ではなく、受け取って並べる係。データは `{ items }` に最初から入った状態で届く
+- `function Pinmap({ items }: { items: PinmapItem[] })` は、左が分割代入（Reactがpropsを1つのオブジェクトにまとめて渡すので、そこから `items` を取り出す）、右が型
+- 受け取った配列を1件ずつ `<li>` にするのは「1個入れたら1個出る」なので `map` が合う
+- JSXの中でJavaScriptを書くときは `{ }` で囲む。囲まないとただの文字になる
+- `"use client"` は1文字でも違うと認識されない（`"use client;"` は別の文字列）
+- クライアントの部品で `lib/articles.ts` の型を使うときは `import type`。`fs` がブラウザ向けのコードに混ざらない
+- `PinmapLoader.tsx` には部品が2つある。`dynamic` で作る「ブラウザで遅れて読み込まれる `Pinmap`」と、このファイルが外に出す `PinmapLoader`。`dynamic(...)` は関数の外に書く
+- 1つの配列がバトンリレーされ、呼び名だけが変わる（`page.tsx` の `pinmapItems` → `items` → `items`）。`items={pinmapItems}` の左は受け取る側が待っている名前（宛名）、右はいま持っている値（中身）
+
+### つまずいた点
+
+- 仮の `Pinmap` の中で、空の配列を自分で作ろうとしていた
+- `"use client;"`、JSXの中で `{ }` なしの `map`、`map` の引数の名前なし、`return ( ... </ul>; )` のかっこ内のセミコロン
+- `import(./Pinmap)` の引用符なし。`dynamic` の部品だけ書いて、外に出す部品の関数がなかった
+- `<Pinmap />` に `items` を渡していなかった。`items={pinmapItems}}` と `}` が1つ多かった
+
+---
+
+## 日時:2026-11-03 09:52 JST
+
+```
+akasaka-street.md のfront matterが不正です
+✖ Invalid discriminator value. Expected 'true' | 'false'
+  → at pinmap
+front matterのpinmapがなにやらひっかかっている?
+```
+
+## 回答
+
+**2026-11-03 09:55 JST**
+
+---
+
+### 原因
+
+- コミット `87e840d`（サンプルマップ用に記事を追加）で、5本すべての1行目に記事名のコメント（`<!-- 赤坂通り -->`）を足していた。`gray-matter` は1行目が `---` のときだけfront matterとして読むので、`data` が空になり、Zodが「`pinmap` が `true` でも `false` でもない」と止めた（ファイル名の順で最初の赤坂通りで止まった）
+- front matterと認識されなかったため、保存時の自動整形（Prettierなど）がMarkdownの本文として整形し、YAMLのインデントも崩れていた（`keywords` の `-`、`tags` 以降の余計なインデント、`location` の下の `lat`・`lng`）
+
+### 決定
+
+- front matterはファイルの1行目の `---` から書き始める。見出しが欲しいときは、front matterの中にYAMLのコメント（`# 赤坂通り`）を書くか、閉じの `---` より後に置く（`title` が2行目にあるので、なくても困らない）
+
+### 確認結果
+
+- コメントを消し、5本のインデントを元に戻した。トップページに `pinmap: true` の記事のタイトルが並んだ
+
+### 感想
+
+- 記事のタイトルを日本語ですばやく確認できるようにするためのコメントが、裏目に出た。インデントが重要なYAMLを忘れていた
+- アウトプットしながら、『これからはじめるReact実践入門』（山田祥寛）を読み直している。流し読みでは気づかなかったZodの記述があった
+
+---
+
+## 日時:2026-11-03 10:04 JST
+
+```
+「分けてコミット」というのができるのですか。やり方を教えて欲しいです
+```
+
+## 回答
+
+**2026-11-03 10:05 JST**
+
+---
+
+### 学んだこと
+
+- `git commit` は、ステージ（`git add` で乗せたもの）だけを記録する。乗せるファイルを選べば、1回の作業を何回かのコミットに分けられる
+
+```bash
+git add poc/content/articles/
+git status   # 「Changes to be committed」に乗ったものだけが入る
+git commit -m "..."
+git add poc/app/components/PinmapLoader.tsx poc/app/page.tsx
+git commit -m "..."
+```
+
+- Cursorの画面では、ソース管理の一覧でファイルごとに「+」を押す。間違えて乗せたら `git restore --staged ファイル名`（画面では「−」）。ファイルの中身は変わらない
+
+### 確認結果
+
+- 記事の修正（`f4199cb`）と、`PinmapLoader` の受け渡し（`838f87a`）に分けてコミットした
+
+---
+
+## 日時:2026-11-03 13:12 JST
+
+```
+問題3: Pinmap.tsx を本物の地図にする。マップの外枠はでたが、「API KEY REQUIRED」と。
+（その後）OSMというよりは、Voyagerのデザインが好きなんだよな。国土地理院の地図ってどう思う?
+（その後）安野貴博氏のデジタルポスターマップ（https://github.com/takahiroanno2024/poster-map）のベースマップにも表記がある。とりあえず国土地理院の地図を使っていきましょう。個人開発でできる限り料金が発生する可能性は減らしたい。国が使っているものを使っておけば、のちほどなんらかの提供の可能性がひらけた時に都合がよい。ただ、OSMも関心はある。
+```
+
+## 回答
+
+**2026-11-03 13:27 JST**
+
+---
+
+### 原因
+
+- コードではなくCARTO側の変更。タイルを直接取得すると、地図の代わりに「API KEY REQUIRED」の画像が返った。CARTO Basemapsは利用条件（2026年9月29日版）でAPIキー必須になった（https://carto.com/basemaps/apikey）
+  - キーは無料（メールで届く）。非商用は月500万リクエスト、商用は月100万リクエストまで無料。超えると有料（月500ドル〜）
+  - URLの末尾に `?key=キー`。著作権表示「© OpenStreetMap contributors, © CARTO」は必須
+  - 商用の無料枠は、地図1回の表示で20〜50枚のタイルを読むとして、月2万〜5万回の表示が目安（大まかな見積もり）
+
+### 決定
+
+- ベースマップは地理院タイルの淡色地図にする（`https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png`）
+  - キー不要・無料。ウェブサイトでリアルタイムに読み込む場合は、出典の明示のみで申請不要（出典「地理院タイル」と、地理院タイル一覧ページ https://maps.gsi.go.jp/development/ichiran.html へのリンク）
+  - 地名が日本語。国道・都道の番号が出る。淡色地図は色付きのピンが目立つ
+  - 料金が発生する可能性を減らせる。公的なデータを使っておけば、将来の提供・連携の可能性が開けたときに都合がよい
+  - 気になる点: Voyagerほど洗練されていない、通りの名前は出にくい、稼働の保証（SLA）はない
+- OSMは、普段は地理院の淡色地図、切り替えるとOSM、という形を候補として残す（react-leafletの `LayersControl`）
+
+### poster-mapのベースマップ
+
+- `public/scripts/common.js` でOpenStreetMap、Google Map、国土地理院地図（淡色地図 `pale`）を用意し、`L.control.layers` で切り替えている
+- Google Mapのタイルを正式なAPIを通さずに直接読み込むのは、Googleの利用規約上認められていない。まねしない
+- OSMの標準タイル（`tile.openstreetmap.org`）は、利用方針でアクセスの多いサービスでの常用を控えるよう求められている。切り替えで選べる2番目の地図くらいなら現実的
+
+### 実装
+
+```tsx
+<MapContainer center={[35.6812, 139.7671]} zoom={13} className="h-[500px]">
+  <TileLayer
+    url="https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
+    attribution='<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>'
+  />
+  {items.map((item) => (
+    <Marker key={item.slug} position={item.location}>
+      <Popup>
+        <strong>{item.title}</strong>
+        <p>{item.summary}</p>
+      </Popup>
+    </Marker>
+  ))}
+</MapContainer>
+```
+
+### 学んだこと
+
+- Leafletは、地図の高さが0だと何も表示しない。`className="h-[500px]"` などで必ず高さを指定する
+- `position` は `{ lat, lng }` のオブジェクトをそのまま受け取れる
+- `center={[35.6812, 139.7671]}` の外側の `{ }` は「ここからJavaScript」、内側の `[ ]` は配列
+
+### つまずいた点
+
+- `Marker` を `TileLayer` の中に入れていた。`TileLayer` は背景の地図画像の担当で、中に入れた部品は表示しない。`TileLayer` は `/>` で閉じ、`Marker` は並べて `MapContainer` の中に置く
+
+### 確認結果
+
+- 地図と4つのピンが出て、ピンを押すとタイトルと `summary` のポップアップが出た
+- ピンは壊れた画像のアイコンで表示された（Leaflet標準のピンの画像のパスの問題。問題6で `divIcon` にして解決する）
+
+---
+
+## 日時:2026-11-03 13:56 JST
+
+```
+問題4: ポップアップにGoogleマップと記事へのリンクを足す。hrefの書き方がわからない?
+（その後）そうか。/ だけで「そのサイトの」という意味なんだね。相対的になるから本番環境などへの表示でもずれない。CSSでいうemじゃなくてrem、てきな。
+```
+
+## 回答
+
+**2026-11-03 14:04 JST**
+
+---
+
+### 実装
+
+```tsx
+<a
+  href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  GoogleMapで確認
+</a>
+<Link href={`/${item.slug}/`}>解説記事を見る</Link>
+```
+
+### 学んだこと
+
+- テンプレートリテラル: `` `固定の文字${値}固定の文字` ``。`${ }` はバッククォートで囲まれた中でしか使えない
+- `target="_blank"` は新しいタブ。`rel="noopener noreferrer"` は、開いた先から元のページを操作させないための指定で、セットで書く
+- サイトの外は絶対URL、サイトの中は `/` から始めるルート相対パス
+
+| 書き方 | 例 | 意味 |
+| --- | --- | --- |
+| 絶対URL | `https://tokyotaximap.com/tomigaya/` | サイトまで含めて完全に指定する |
+| ルート相対パス | `/tomigaya/` | いまのサイトの一番上から数えた場所 |
+| 相対パス | `tomigaya/` | いま開いているページから数えた場所 |
+
+- ルート相対パスなら、dev（`localhost:3000`）、Pagefindの確認（`localhost:1414`）、本番のどこでも書き換えずに同じサイトの記事へ移動できる。`Link` の素早い切り替えも生きる。相対パスは「いまどのページにいるか」で行き先が変わるので、サイト内のリンクは `/` から始める
+- CSSの `em`（親が基準）と `rem`（ルートが基準）の関係と同じ。`rem` の「r」もroot
+
+### つまずいた点
+
+- 記事のリンクを `{${slug}}` と書いた（バッククォートなし、`item.` なし、前後の `/` なし）
+- 次に `` `https://tokyotaximap.com/${item.slug}/` `` と書き、いまの本番サイト（WordPress）に飛ぶようになっていた
+
+### 確認結果
+
+- 記事のリンクでPoCの記事ページに移動できた
+
+---
+
+## 日時:2026-11-03 14:12 JST
+
+```
+問題5: npm run build → npx pagefind --site out --serve で、静的エクスポートでも地図が動くかを確かめる。確認はできました。
+ソースの確認もしたいのですが、ソースを表示してから検索バーみたいなのがどこかにあるんでしょうか?Chromeですが
+（その後）これがクライアントサイドレンダリングというやつでしょうか。「サーバーから送られた（ビルド時に作られた）データにはまだ地図がない。ブラウザでJSによって地図が生成されている」と。
+```
+
+## 回答
+
+**2026-11-03 14:18 JST**
+
+---
+
+### 確認結果
+
+- `localhost:1414` で、地図、4つのピン、ポップアップ、記事とGoogleマップのリンクが、devと同じように動いた
+- `out/index.html` の地図の部分は、`loading` に書いた文字と、Next.jsの目印だけだった。`leaflet-container` などの地図の部品はHTMLにない
+
+```html
+<template data-dgst="BAILOUT_TO_CLIENT_SIDE_RENDERING"></template><p>地図を読み込んでいます...</p>
+```
+
+### 学んだこと
+
+- `BAILOUT_TO_CLIENT_SIDE_RENDERING` は「ここはサーバーでは作らず、ブラウザに任せた」という目印。`ssr: false` の跡
+- 「ページのソースを表示」（`⌘` + `⌥` + `U`）は、サーバーから送られてきたHTML（JavaScriptが動く前）。中の検索は `⌘` + `F`。開発者ツール（`⌘` + `⌥` + `I`）の「Elements」は、JavaScriptが動いた後のいまの画面の中身
+- 地図の部分はクライアントサイドレンダリング。見出しや記事一覧はビルド時に作ってHTMLに入っている（静的生成）。ページ全体はその組み合わせ
+- 開発者ツールの「Network」では、`index.html` → JavaScript（`Pinmap.tsx` の分は `dynamic` で後から別に読み込まれる）→ `cyberjapandata.gsi.go.jp` の地図の画像、の順に並ぶ。地図を動かすと画像が増える
+
+---
+
+## 日時:2026-11-03 14:37 JST
+
+```
+問題6: ピンを自前のアイコンにする（カテゴリの型と色の対応表 → divIcon → 1文字のラベル）。
+私は色盲なので、よければ色を決めていただきたいですね。その際、なぜその色にしたかという理由があればいっしょに付記してください。
+（その後）アクセシビリティがさまざまなところで重要視されている昨今です。東京都のカラーユニバーサルデザイン（https://www.fukushi.metro.tokyo.lg.jp/documents/d/fukushi/colorudguideline2）など、できる限り読み込んでいきたい。
+（その後）うーんまず色をもってくる書き方がわからないな。。
+```
+
+## 回答
+
+**2026-11-03 17:19 JST**
+
+---
+
+### 決定
+
+- 色だけでカテゴリを区別させない。ピンの中に1文字のラベルを入れる（色の見え方の多様性に加え、運行中にスマートフォンの小さな画面で見る場面もあるため）
+- 色はOkabe-Ito（岡部・伊藤）の配色から選ぶ。色覚のタイプが違っても見分けやすいよう、明るさにも差がある
+
+| カテゴリ | 色 | ラベル | 理由 |
+| --- | --- | --- | --- |
+| 首都高 | `#009E73`（青みの緑） | 首 | 首都高の案内標識が緑。sample-mapも緑 |
+| 主要駅 | `#0072B2`（濃い青） | 駅 | 濃くはっきりした色で、目印の駅を目立たせる |
+| 施設 | `#E69F00`（オレンジ） | 施 | sample-mapの金色に近く、淡色地図で埋もれない。純粋な黄色は白っぽい地図で見えにくい |
+| 交差点 | `#D55E00`（朱色） | 交 | 信号や「注意」を連想させる赤系 |
+| 抜け道・定番ルート | `#56B4E9`（空色） | 抜 | sample-mapの水色に近い |
+| 通称がある道 | `#CC79A7`（赤紫） | 通 | 残りの色で、ほかの5色と最も見分けやすい |
+| 幹線道路、タクシー基礎、主要エリア解説、その他お役立ち知識 | `#7F7F7F`（灰色） | 幹、基、エ、他 | ピンマップに載らない想定。来ても「想定外のピン」と分かる |
+
+- オレンジ（施設）と朱色（交差点）は比較的近い組み合わせなので、文字のラベルが区別の決め手になる
+- ラベルは黒の太字。白い文字だとオレンジと空色の上でコントラスト比が約2.3:1しかない。黒なら7色すべてで約4:1以上（最も低いのは濃い青で約4.0:1）
+
+### 実装
+
+```ts
+// lib/schema.ts
+export type Category = (typeof categories)[number];
+
+// app/components/Pinmap.tsx
+const categoryStyles: Record<Category, { color: string; label: string }> = {
+  幹線道路: { color: "#7F7F7F", label: "幹" },
+  // ...（全11カテゴリ）
+  "抜け道・定番ルート": { color: "#56B4E9", label: "抜" },
+};
+
+function createPinIcon(category: Category) {
+  const categoryColor = categoryStyles[category].color;
+  const categoryLabel = categoryStyles[category].label;
+
+  return L.divIcon({
+    html: `<div class="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-black" style="background-color: ${categoryColor}">${categoryLabel}</div>`,
+    className: "pinmap-icon",
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
+}
+```
+
+- `Marker` に `icon={createPinIcon(item.category)}` を渡す。`PinmapItem` の `category` は `string` から `Category` に変えた
+
+### 学んだこと
+
+- `(typeof 配列)[number]` は「その配列の中身の1つ」の型。`as const` のおかげで、11個の決まった文字列のどれか、になる。`型[]` は「その型の配列」で意味が違う
+- `Record<Category, ...>` は全カテゴリが必須なので、書き漏らすと型エラーで気づける
+- 型だけを読み込むときは `type` を付ける（`import { type Category }`）
+- 保存時の自動整形が、なくても動くキーの引用符を外した。「・」を含む「抜け道・定番ルート」だけ引用符が残った（記号を含むキーは囲む必要がある）
+- キーの名前を直接書くときは `.`、キーが変数に入っているときは `[ ]`（`categoryStyles[category].color` は1段目が `[ ]`、2段目が `.`）
+- `{ }` が「ここからJavaScript」になるのはJSXの中だけ。普通のJavaScriptの場所では、オブジェクトを作る意味になる
+- 部品はpropsを1つのオブジェクトで受け取るので `({ items }: ...)`。普通の関数は、渡された値をそのまま受け取る（`(category: Category)`）
+- `L.divIcon` の `html` はJSXではなくHTMLの文字列。`class`（`className` ではない）、属性はスペース区切り、色は `style` にCSSを文字で書く。文字列の中の間違いは、エディタのエラーにも注意（警告）にもならないので、目で確かめる
+- Tailwindは、ファイルにそのまま書かれたクラス名だけを見つけてCSSを作る。`bg-[${色}]` のように実行時に組み立てたクラス名は生成されない。形はTailwindのクラス、色だけ `style`
+- `className` に独自の名前を付けないと、Leaflet標準の白い四角い背景が出る
+- `iconAnchor` の単位はピクセル。24pxの丸の中心は `[12, 12]`
+- 自動補完で候補を選ぶと、ファイルの上に `import` が増えることがある。見覚えのない `import` は疑う
+
+### つまずいた点
+
+- `(typeof categories)[]` と書いた（`[number]` が正しい）。`import { Category }` に `type` がなかった
+- 施設の色に `#` を付け忘れた（型は文字列なのでエラーにならない）
+- `createPinIcon({ category }: { category: Category[] })` と、部品の受け取り方と配列の型で書いていた
+- `const categoryColor = {categoryColors[category]};` と、JSXの外で `{ }` で囲んだ
+- `html` の中で `className="..."`、属性の間に `,` を書いた。`iconAnchor: [50, 50]`
+- 自動補完で `import { Style } from "util";` が入っていた
+
+### 確認結果
+
+- devで、壊れた画像のピンが、カテゴリ別の色と1文字のラベルが付いた丸に変わった
+
+---
+
+## 日時:2026-11-03 17:24 JST
+
+```
+お手本とするので、今回の作業（ラベルの追加）のコミット、プッシュから行ってください。その後、ログとdocsへの反映をお願いします。
+（その後）コミット、プッシュもAgentがやった印をなにかタイトルにつけておいてください
+Qへの回答は、Dの「クラスタリングの~」とします。
+```
+
+## 回答
+
+**2026-11-03 17:35 JST**
+
+---
+
+### 実施
+
+- ラベルの追加をコミットしてプッシュした: `0d76ec6`「(Agent解説使用)(Agentコミット)update: ピンにカテゴリの1文字ラベルを追加し、対応表を色とラベルの組にする」
+  - 最初は印なしでプッシュしたため、`git commit --amend` でメッセージを書き換え、`git push --force-with-lease` で差し替えた（リモートが想定どおりのときだけ上書きする強制プッシュ）
+- コミットメッセージの印に `(Agentコミット)` を加えた。自分で書いたコードを、Agentがコミット・プッシュしたときに付ける
+
+### 決定
+
+- ピンマップの最小の形（front matterからデータを集める、静的エクスポートで動く、ポップアップにリンク、色と文字で区別できるピン）がそろったので、ここを区切りとする
+- 次は、クラスタリング、サイドバー、カテゴリの絞り込みを入れるかどうかを、記事数の見込みから判断する
+
+### 次のステップ
+
+- クラスタリング、サイドバー、カテゴリの絞り込みの要否の判断
+- その後の候補: レイアウト（ファーストビュー、PC・タブレット・スマートフォン）、ポップアップのリンクの見た目、ベースマップの切り替え（OSM）、front matterの `slug` とファイル名の一致チェック、Pagefindの日本語の区切り方の調査
+
+---
+
