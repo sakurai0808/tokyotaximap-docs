@@ -16,6 +16,8 @@ export const categories = [
   "その他お役立ち知識",
 ] as const; // 配列の型を具体的な値の集まりにできる
 
+export type Category = (typeof categories)[number];
+
 // 区名
 export const cities = [
   "渋谷区",

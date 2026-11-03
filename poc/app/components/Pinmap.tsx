@@ -10,6 +10,22 @@ import type { PinmapItem } from "@/lib/articles";
 
 import Link from "next/link";
 
+import type { Category } from "@/lib/schema"; // カテゴリの型をインポート
+
+const categoryColors: Record<Category, string> = {
+  // すべてのカテゴリをキーに持ち、値は文字列
+  幹線道路: "#7F7F7F",
+  交差点: "#D55E00",
+  主要駅: "#0072B2",
+  施設: "#E69F00",
+  通称がある道: "#CC79A7",
+  "抜け道・定番ルート": "#56B4E9", // 「・」を含んでいるため、""で囲まないとエラーになる可能性がある
+  首都高: "#009E73",
+  タクシー基礎: "#7F7F7F",
+  主要エリア解説: "#7F7F7F",
+  その他お役立ち知識: "#7F7F7F",
+};
+
 export default function Pinmap({ items }: { items: PinmapItem[] }) {
   return (
     <MapContainer center={[35.6812, 139.7671]} zoom={13} className="h-[500px]">

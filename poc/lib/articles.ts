@@ -6,7 +6,11 @@ import matter from "gray-matter"; // front matterを分割
 import { remark } from "remark";
 import html from "remark-html";
 import remarkGfm from "remark-gfm";
-import { articleSchema, type ArticleFrontMatter } from "./schema";
+import {
+  articleSchema,
+  type Category,
+  type ArticleFrontMatter,
+} from "./schema";
 import { z } from "zod";
 
 // 記事ディレクトリを定義する
@@ -109,7 +113,7 @@ export function getSuggestItems(): SuggestItem[] {
 export type PinmapItem = {
   slug: string;
   title: string;
-  category: string;
+  category: Category;
   location: { lat: number; lng: number };
   summary: string;
 };
