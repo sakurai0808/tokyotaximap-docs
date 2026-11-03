@@ -36,6 +36,10 @@
 
 - [ADR 0001: Next.jsを使用する](./docs/decisions/0001-use-nextjs.md)
 
+### 参考資料
+
+- [参考資料](./docs/references.md): デザイン・機能を考えるときに参考にするサイト
+
 ## 開発・検討ログ
 
 - [`logs/ai/project.md`](./logs/ai/project.md): プロジェクトに関する検討ログ
