@@ -12,6 +12,7 @@ import type { PinmapItem } from "@/lib/articles";
 import Link from "next/link";
 
 import type { Category } from "@/lib/schema"; // カテゴリの型をインポート
+import { useState } from "react";
 
 const categoryStyles: Record<Category, { color: string; label: string }> = {
   // すべてのカテゴリをキーに持ち、値は色とラベルの組
@@ -41,36 +42,67 @@ function createPinIcon(category: Category) {
 }
 
 export default function Pinmap({ items }: { items: PinmapItem[] }) {
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null,
+  ); // カテゴリの選択状態
+  const visibleItems =
+    selectedCategory === null
+      ? items
+      : items.filter((item) => item.category === selectedCategory);
   return (
-    <MapContainer center={[35.6812, 139.7671]} zoom={13} className="h-[500px]">
-      <TileLayer
-        url="https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
-        attribution='<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>' // 地理院タイル(淡色地図)
-      />
-      {items.map((item) => (
-        <Marker
-          key={item.slug}
-          position={item.location}
-          icon={createPinIcon(item.category)}
+    <>
+      <div>
+        <button
+          type="button"
+          aria-pressed={selectedCategory === null}
+          onClick={() => setSelectedCategory(null)}
+          className={selectedCategory === null ? "font-bold underline" : ""}
         >
-          <Popup>
-            <strong>{item.title}</strong>
-            <p>{item.summary}</p>
-            <div>
-              {/* GoogleMapのリンクボタン */}
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GoogleMapで確認
-              </a>
-              {/* タクマップ記事リンクボタン */}
-              <Link href={`/${item.slug}/`}>解説記事を見る</Link>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+          すべて
+        </button>
+        <button
+          type="button"
+          aria-pressed={selectedCategory === "首都高"}
+          onClick={() => setSelectedCategory("首都高")}
+          className={selectedCategory === "首都高" ? "font-bold underline" : ""}
+        >
+          首都高
+        </button>
+      </div>
+      <MapContainer
+        center={[35.6812, 139.7671]}
+        zoom={13}
+        className="h-[500px]"
+      >
+        <TileLayer
+          url="https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
+          attribution='<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>' // 地理院タイル(淡色地図)
+        />
+        {visibleItems.map((item) => (
+          <Marker
+            key={item.slug}
+            position={item.location}
+            icon={createPinIcon(item.category)}
+          >
+            <Popup>
+              <strong>{item.title}</strong>
+              <p>{item.summary}</p>
+              <div>
+                {/* GoogleMapのリンクボタン */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GoogleMapで確認
+                </a>
+                {/* タクマップ記事リンクボタン */}
+                <Link href={`/${item.slug}/`}>解説記事を見る</Link>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </>
   );
 }
