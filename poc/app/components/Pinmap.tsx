@@ -6,6 +6,9 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 
 import type { PinmapItem } from "@/lib/articles";
 
@@ -99,30 +102,35 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
           url="https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
           attribution='<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>' // 地理院タイル(淡色地図)
         />
-        {visibleItems.map((item) => (
-          <Marker
-            key={item.slug}
-            position={item.location}
-            icon={createPinIcon(item.category)}
-          >
-            <Popup>
-              <strong>{item.title}</strong>
-              <p>{item.summary}</p>
-              <div>
-                {/* GoogleMapのリンクボタン */}
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  GoogleMapで確認
-                </a>
-                {/* タクマップ記事リンクボタン */}
-                <Link href={`/${item.slug}/`}>解説記事を見る</Link>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <MarkerClusterGroup
+          chunkedLoading // 少しずつ読み込む
+          disableClusteringAtZoom={16}
+        >
+          {visibleItems.map((item) => (
+            <Marker
+              key={item.slug}
+              position={item.location}
+              icon={createPinIcon(item.category)}
+            >
+              <Popup>
+                <strong>{item.title}</strong>
+                <p>{item.summary}</p>
+                <div>
+                  {/* GoogleMapのリンクボタン */}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GoogleMapで確認
+                  </a>
+                  {/* タクマップ記事リンクボタン */}
+                  <Link href={`/${item.slug}/`}>解説記事を見る</Link>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </>
   );
