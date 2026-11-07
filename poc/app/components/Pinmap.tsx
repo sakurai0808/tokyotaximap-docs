@@ -28,6 +28,15 @@ const categoryStyles: Record<Category, { color: string; label: string }> = {
   その他お役立ち知識: { color: "#7F7F7F", label: "他" },
 };
 
+const pinCategories: Category[] = [
+  "交差点",
+  "主要駅",
+  "施設",
+  "抜け道・定番ルート",
+  "通称がある道",
+  "首都高",
+];
+
 // ピンのアイコンをつくる関数
 function createPinIcon(category: Category) {
   const categoryColor = categoryStyles[category].color; // 2段で項目を取り出す
@@ -49,25 +58,37 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
     selectedCategory === null
       ? items
       : items.filter((item) => item.category === selectedCategory);
+
   return (
     <>
-      <div>
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           aria-pressed={selectedCategory === null}
           onClick={() => setSelectedCategory(null)}
-          className={selectedCategory === null ? "font-bold underline" : ""}
+          className={`inline-flex items-center gap-1
+                      ${selectedCategory === null ? "font-bold underline" : ""}`}
         >
           すべて
         </button>
-        <button
-          type="button"
-          aria-pressed={selectedCategory === "首都高"}
-          onClick={() => setSelectedCategory("首都高")}
-          className={selectedCategory === "首都高" ? "font-bold underline" : ""}
-        >
-          首都高
-        </button>
+        {pinCategories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            aria-pressed={selectedCategory === cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`inline-flex items-center gap-1
+                        ${selectedCategory === cat ? "font-bold underline" : ""}`}
+          >
+            <span
+              style={{ backgroundColor: categoryStyles[cat].color }}
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-black"
+            >
+              {categoryStyles[cat].label}
+            </span>
+            {cat}
+          </button>
+        ))}
       </div>
       <MapContainer
         center={[35.6812, 139.7671]}
