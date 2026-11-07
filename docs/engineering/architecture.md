@@ -150,7 +150,7 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 - `poc/lib/articles.ts` の `getPinmapItems()`: 全記事から `pinmap: true` のものだけを選び、`slug`・`title`・`category`・`location`・`summary` を集める。`pinmap` で型が絞り込まれるので、`if (frontMatter.pinmap)` の中でだけ `location`・`summary` を使える
 - `poc/app/page.tsx`（サーバーコンポーネント）: `getPinmapItems()` を呼び、`PinmapLoader` にpropsで渡す
 - `poc/app/components/PinmapLoader.tsx`（クライアントコンポーネント）: `next/dynamic` で `Pinmap` を `ssr: false` で読み込み、`items` を渡すだけの中継役
-- `poc/app/components/Pinmap.tsx`（クライアントコンポーネント）: Leafletの本体。地図、ピン、ポップアップ
+- `poc/app/components/Pinmap.tsx`（クライアントコンポーネント）: Leafletの本体。カテゴリの絞り込みのボタン、地図、ピン、ポップアップ、クラスタリング
 
 中継役を挟むのは、`page.tsx` が `fs` で記事を読むためサーバーで動かす必要がある一方、`ssr: false` はサーバーコンポーネントに書けないため（同梱ドキュメント `lazy-loading.md`: 「`ssr: false` is not allowed with `next/dynamic` in Server Components.」）。
 
@@ -186,11 +186,26 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 - `iconSize: [24, 24]`、`iconAnchor: [12, 12]`（丸の中心を座標に合わせる。単位はピクセル）
 - 色とラベルは `Record<Category, { color: string; label: string }>` の対応表で持つ（`Category` は `schema.ts` の `categories` から作る）。全カテゴリが必須なので、カテゴリを増やして書き漏らすと型エラーで気づける
 
+カテゴリの絞り込み:
+
+- 選んでいるカテゴリを `useState<Category | null>(null)` で持つ。`null` は「すべて」
+- 表示するピンは `selectedCategory === null ? items : items.filter((item) => item.category === selectedCategory)` で計算する（stateには持たない）
+- ボタンにするカテゴリは、掲載の目安の6カテゴリの配列（`pinCategories: Category[]`、部品の外に置く）を `map` して並べる。順番は [機能要件](../requirements/features.md#ピンマップ) と同じ
+- 選んでいるボタンは `aria-pressed` と `className`（太字・下線）を同じ条件で切り替える
+- 各ボタンにピンと同じ色の丸と1文字を付け、凡例を兼ねる。JSXでは色を `style={{ backgroundColor: … }}` で渡す
+
+クラスタリング:
+
+- `react-leaflet-cluster`（4.1.3。react-leaflet 5、React 19、leaflet 1.9に対応）の `MarkerClusterGroup` で、`visibleItems.map(...)` の `Marker` を囲む。絞り込んだ後のピンをまとめる
+- 4系はCSSを自動で読み込まないので、`react-leaflet-cluster/dist/assets/MarkerCluster.css` と `MarkerCluster.Default.css` を自分で読み込む
+- `disableClusteringAtZoom={16}`: 運行中に見る縮尺ではまとめず、色と文字のピンを見せる
+- `chunkedLoading`: ピンが多くても固まらないよう、少しずつ読み込む
+- 静的エクスポートでも動作を確認済み
+
 ## 次のステップ
 
-PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`）。続けて次を行う。
+PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`）。続けて次を行う。
 
-- ピンマップのクラスタリング、サイドバー、カテゴリの絞り込みを入れるかどうかの判断（記事数の見込みから）
 - ピンマップのレイアウト（トップページのファーストビュー、PC・TB・SP）、ポップアップのリンクの見た目
 - ベースマップの切り替え（OpenStreetMap）
 - front matterの `slug` とファイル名の一致チェック（必要に応じて）
@@ -202,7 +217,7 @@ PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zod�
 - ホスティング・デプロイ・監視
 - ミニ単語帳のデータ形式とPagefindへの載せ方
 - 地図埋め込みの方式
-- ピンマップのクラスタリング、サイドバー、カテゴリの絞り込みの要否
+- ピンマップの一覧表示（サイドバー）の形（本実装のデザインの段階で決める）
 - ベースマップの本番での最終決定（PoCは地理院タイル。OpenStreetMapとの切り替えを検討）
 
 ## Q&A（検討ログ）
