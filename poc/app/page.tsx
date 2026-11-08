@@ -18,7 +18,10 @@ export default function Home() {
       <ul className="list-disc space-y-2 pl-6">
         {articles.map((article) => (
           <li key={article.slug}>
-            <Link href={`/${article.slug}`} className="text-blue-600 underline">
+            <Link
+              href={`/${article.slug}/`}
+              className="text-blue-600 underline"
+            >
               {article.title}
             </Link>
             <span className="ml-2 text-sm text-zinc-500">
