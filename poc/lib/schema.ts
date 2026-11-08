@@ -28,6 +28,17 @@ export const cities = [
   "都心以外の区",
 ] as const;
 
+export type City = (typeof cities)[number];
+
+export const cityPaths: Record<City, string> = {
+  渋谷区: "shibuya",
+  新宿区: "shinjuku",
+  中央区: "chuo",
+  千代田区: "chiyoda",
+  港区: "minato",
+  都心以外の区: "others",
+};
+
 const dateSchema = z.date().transform((d) => d.toISOString().slice(0, 10)); // Dateとして受け取り、YYYY-MM-DDの文字列に変換する
 
 // front matterのルールを決める
