@@ -50,6 +50,12 @@ function readArticleFile(slug: string) {
     );
   }
 
+  if (result.data.slug !== slug) {
+    throw new Error(
+      `${slug}.mdのfront matterの${slug}がファイル名と一致しません`,
+    );
+  }
+
   return { frontMatter: result.data, content }; // 検証済みのデータに「frontMatter」という名前をつけて、本文(content)と一緒にオブジェクトとして返す
 }
 
