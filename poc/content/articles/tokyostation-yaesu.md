@@ -12,6 +12,7 @@ keywords:
   - 大丸
 tags: [東京駅, 新幹線]
 thumbnail: /images/articles/tokyostation-yaesu.png
+youtube: tBgaVIiAO_o
 pinmap: true
 location:
   lat: 35.68102297837744

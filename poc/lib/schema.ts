@@ -30,6 +30,8 @@ export const cities = [
 
 const dateSchema = z.date().transform((d) => d.toISOString().slice(0, 10)); // Dateとして受け取り、YYYY-MM-DDの文字列に変換する
 
+// front matterのルールを決める
+// メソッドチェーンの順番に注意。中身を確かめるルールを先に書き、包むものは最後に記述する
 const baseSchema = z.object({
   title: z.string().min(1),
   slug: z.string(),
@@ -40,7 +42,13 @@ const baseSchema = z.object({
   updatedAt: dateSchema,
   tags: z.array(z.string()),
   thumbnail: z.string(),
-  youtube: z.string().optional(),
+  youtube: z
+    .string()
+    .regex(
+      /^[A-Za-z0-9_-]{11}$/,
+      "YouTubeの動画IDは11文字の英数字・_・-で書きます。URLではないことに注意してください",
+    )
+    .optional(),
 });
 
 export const articleSchema = z.discriminatedUnion("pinmap", [
