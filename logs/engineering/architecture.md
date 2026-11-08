@@ -3093,3 +3093,94 @@ if (result.data.slug !== slug) {
 
 ---
 
+## 日時:2026-11-08 13:52 JST
+
+```
+問題10: YouTubeの埋め込み。
+1. front matterの youtube に、動画のIDだけを入れるか、URLを入れるか決める
+2. 決めた形をZodで縛る（poc/lib/schema.ts）
+3. 記事ページに動画を表示する（poc/app/[slug]/page.tsx）。youtube がない記事では何も出さない
+（1の答え）A。1記事にせいぜいひとつ、かつアプリの開発の合間で作られる動画の数は制限されるため、手間が少しかかっても気にしない
+（試す動画）https://youtu.be/tBgaVIiAO_o を tokyostation-yaesu.md に入れる
+```
+
+## 回答
+
+**2026-11-08 13:52 JST**
+
+---
+
+### 決定
+
+- `youtube` には動画IDだけを書く（例: `tBgaVIiAO_o`）。URLは書かない
+- 理由: 動画は1記事に1本までで本数も限られるので、URLからIDを切り出す手間は小さい。IDは形が決まっていて検証しやすく、埋め込みのURLもテンプレートリテラル1つで組み立てられる。URLは形が何通りもあり（`watch?v=…`、`youtu.be/…`、`shorts/…`、`&t=30s`）、IDを取り出すコードの間違いがエラーにならない間違いになりやすい
+
+### 実装
+
+```ts
+// poc/lib/schema.ts
+youtube: z
+  .string()
+  .regex(
+    /^[A-Za-z0-9_-]{11}$/,
+    "YouTubeの動画IDは11文字の英数字・_・-で書きます。URLではないことに注意してください",
+  )
+  .optional(),
+```
+
+```tsx
+// poc/app/[slug]/page.tsx（日付の <p> と本文の <article> の間）
+{article.youtube && (
+  <iframe
+    src={`https://www.youtube-nocookie.com/embed/${article.youtube}`}
+    title={`${article.title}の動画`}
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    loading="lazy"
+    referrerPolicy="strict-origin-when-cross-origin"
+    className="mb-8 aspect-video w-full"
+  ></iframe>
+)}
+```
+
+- `poc/content/articles/tokyostation-yaesu.md` の `thumbnail` の次に `youtube: tBgaVIiAO_o` を足した
+- コミット: `458047f`（スキーマとfront matter）、`7a1aceb`（記事ページ）
+
+### 学んだこと
+
+- 正規表現は `/ /` で囲む。`^` は先頭から、`[A-Za-z0-9_-]` はこの中のどれか1文字、`{11}` は直前のルールをちょうど11回、`$` は末尾まで
+- `^`・`$` がないと「どこかに条件に合う11文字があればよい」になり、`https://youtu.be/tBgaVIiAO_o` の中の `tBgaVIiAO_o` に当たって通ってしまう
+- Zod 4（4.6.5）の `.regex(正規表現, "エラーの文章")` は、2つ目に文字列を渡せる
+- メソッドチェーンでは、それぞれの `.` が新しいものを返し、次の `.` はその返ってきたものに働く。`.optional()` は文字列のスキーマを「省略してもよい」入れ物に包むので、その後ろに文字列用の `.regex()` はつなげない（TypeScriptのエラー）。`dateSchema` の `.transform()` も同じ。中身を確かめるルールを先に、包むもの（`.optional()`、`.transform()`）は最後に
+- Zodは形を確かめるだけで、画面には何も足さない。表示は記事ページで書く
+- JSXの属性は、`属性="文字"` なら書いた文字がそのまま値に、`属性={式}` なら計算した結果が値になる。混ぜられない
+- JSXではHTMLの属性名の一部がキャメルケースになる（`class` → `className`、`allowfullscreen` → `allowFullScreen`、`referrerpolicy` → `referrerPolicy`）。値なしで名前だけ書くと `true`
+- `&&` は `true`・`false` ではなく、左右どちらかの値そのものを返す。`0 && X` は `0`。Reactは `false`・`null`・`undefined` は何も表示しないが、数字の `0` は表示する。`keywords` を `article.keywords.length > 0 &&` と書くのはこのため。`youtube` は文字列があるかだけを見ればよく、空の文字列は正規表現で弾いているので `article.youtube &&` で足りる
+- devはTypeScriptの型のエラーで表示を止めない。`npx tsc --noEmit` か `npm run build` で確かめる
+- `allow` は `;` で区切ったひとつひとつを「機能の名前 許可する相手」と読む。知らない名前は、ブラウザがエラーを出さずに無視する
+
+### つまずいた点
+
+- `.optional()` の後に `.regex()` を書いてエラーになり、意味が分からないまま前に移した（理由は「学んだこと」のメソッドチェーンの項目）
+- 問題2の予想で、スキーマを直しただけで動画が「埋め込まれて表示される」とした（表示のコードはまだなかった）
+- 問題2の確認の3（キーがない記事が通るか）の意図が分からなかった。slugのときと同じ「正しいもの（キーがないのも正しい）が通ること」の確認
+- `src="{`…`}"`、`title="{article.title}"` と `{ }` を `" "` で囲んだ。`src` は変な文字列の相対パスになり、iframeの中にNext.jsの404が出た。`title` はエラーにも見た目にも出ず、画面読み上げが「{article.title}」と読む（エラーにならない間違い）
+- `allow` の `encrypted-media` と `gyroscope` の間の `;` が抜けた。直したときに `encrypted-media;s gyroscope` と余分な `s` が入った（どちらもエラーにならず、動画も再生できる）
+- `{article.youtube?.length > 0 && (` と書いた。`?.` で左側が「数字、または `undefined`」になり、TypeScriptのエラー（`TS18048: 'article.youtube.length' is possibly 'undefined'.`）。devでは画面が動いていた
+- `> 0` を外したらどうなるかを「`0` というlengthがあると判断されて、式がtrueになる」と答えた（実際は `0` が返り、ページに「0」と表示される）
+
+### 確認結果
+
+- `youtube: tBgaVIiAO_o` でビルドが通り、`youtube: https://youtu.be/tBgaVIiAO_o` ではエラーでビルドが止まった。キーがない4本は影響なく通った
+- devで `/tokyostation-yaesu/` に動画が出て再生でき、`/tomigaya/` では何も出なかった
+- `npx tsc --noEmit` でエラーがなくなった
+- `npm run build` → `npx pagefind --site out --serve` でも、devと同じように再生できた
+- `allow` の余分な `s` を直す前後で、DevToolsのコンソールを確認した
+
+### 次のステップ
+
+- 技術検証の残り: 区から探す（先に区のページのURLの形を決める。記事が `/{slug}/` でprefixなしのため）、Pagefindの日本語の区切り方の調査
+- ホスティングを決める前の整理（商用の扱い、ドメインの管理場所、画像の量、アクセス数）
+
+---
+

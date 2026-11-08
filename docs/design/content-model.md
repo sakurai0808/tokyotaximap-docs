@@ -142,7 +142,7 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 | ---------- | -------- | --------------------------------------------------------------------------- |
 | `location` | object   | `pinmap: true` のとき必須（`lat`, `lng`）                                   |
 | `summary`  | string   | `pinmap: true` のとき必須。ポップアップ専用の短文(記事ページには表示しない) |
-| `youtube`  | string   | 任意。動画がない記事はキーを省略                                            |
+| `youtube`  | string   | 任意。動画がない記事はキーを省略。動画ID（英数字・`_`・`-` の11文字。例: `tBgaVIiAO_o`）を書き、URLは書かない（ビルド時に検証） |
 | `tags`     | string[] | 任意。なければ `[]`。enumリストは未確定                                     |
 
 ### 記述例

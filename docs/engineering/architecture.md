@@ -42,6 +42,7 @@ PoCでは **Zod** で実装した（`poc/lib/schema.ts`）。
 - 条件付きキーは `pinmap` を識別子とする `z.discriminatedUnion` で表す。`pinmap: true` なら `location`・`summary` が必須、`false` なら持たない
 - 日付はYAMLパーサーが `Date` として渡すため、`Date` として検証し `YYYY-MM-DD` の文字列に変換する
 - 検証に失敗したらビルドを止める。エラーには記事のファイル名と違反したキーを表示する
+- `youtube` は動画IDだけを書き、`z.string().regex(/^[A-Za-z0-9_-]{11}$/, "…").optional()` で形を確かめる。URLを書くとビルドが止まる。`^`・`$` がないと、URLの中の11文字に当たって通ってしまう
 - front matterの `slug` とファイル名（`{slug}.md`）が一致しなければビルドを止める。URLはファイル名から作るので、一致を確かめないとfront matterの `slug` の間違いに気づけない。エラーにはファイル名とfront matterの値を表示する。Zodの検証の後に確かめる（検証前の値は型が `any` のため）
 
 ### 全文検索・サジェスト
@@ -205,17 +206,31 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 - `chunkedLoading`: ピンが多くても固まらないよう、少しずつ読み込む
 - 静的エクスポートでも動作を確認済み
 
+### YouTube
+
+front matterの `youtube` には動画IDだけを書く（URLは書かない）。動画は1記事に1本までで本数も限られるため、URLからIDを切り出す手間より、形がはっきりしていて検証しやすいことを優先した。URLはいくつもの形（`watch?v=…`、`youtu.be/…`、`shorts/…`、`&t=30s` など）があり、IDを取り出すコードの間違いがエラーにならない間違いになりやすい。
+
+記事ページ（PoC: `poc/app/[slug]/page.tsx`）では、`youtube` があるときだけ `<iframe>` を出す（`{article.youtube && (…)}`）。ない記事では何も出さず、空いた場所もできない。PoCでは日付と本文の間に置く（本実装では重要ブロックとの並びを決める。[UI・UX設計](../design/ui-ux.md#基本方針)）。
+
+- `src`: `https://www.youtube-nocookie.com/embed/{ID}`（再生するまでYouTubeのCookieを置かない版）
+- `title`: `{記事のタイトル}の動画`（画面読み上げ用）
+- `allow`: YouTubeの標準の埋め込みコードと同じ（`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`）。区切りの `;` が抜けたり余分な文字が入ったりしても、ブラウザはエラーを出さずにその機能を無視する
+- `allowFullScreen`、`loading="lazy"`（画面に近づくまで読み込まない）
+- `referrerPolicy="strict-origin-when-cross-origin"`（YouTubeの標準の埋め込みコードと同じ。リファラーがないとYouTube側でエラーになる場合がある）
+- 大きさは `aspect-video w-full`（横幅いっぱい、16:9）
+
+dev、`npm run build` → `npx pagefind --site out --serve` の両方で再生を確認済み。
+
 ## 次のステップ
 
-PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` とファイル名の一致を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`）。続けて次を行う。
+PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` とファイル名の一致を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）、記事ページへのYouTubeの埋め込みまで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`。主要駅の `tokyostation-yaesu` に `youtube` あり）。続けて次を行う。
 
 - Pagefindの日本語の区切り方と前方一致の確認（検索語「2024」が本文の「2」に、「なああああ」が「な」「ない」に一致する理由）
-- 区から探す（区ごとの記事一覧ページを静的エクスポートで書き出す）
-- 記事ページへのYouTubeの埋め込み
+- 区から探す（区ごとの記事一覧ページを静的エクスポートで書き出す。記事が `/{slug}/` でprefixなしのため、区のページのURLの形を先に決める）
 - ピンマップのレイアウト（トップページのファーストビュー、PC・TB・SP）、ポップアップのリンクの見た目
 - ベースマップの切り替え（OpenStreetMap）
 
-上の5つのうち、技術的な不確かさが残るPagefind・区から探す・YouTubeを先に確かめ、技術検証を締めくくる。レイアウトとベースマップの切り替えは本実装で行ってもよい。最初の公開の範囲は [機能要件](../requirements/features.md#最初の公開の範囲) を参照。
+上の4つのうち、技術的な不確かさが残るPagefind・区から探すを先に確かめ、技術検証を締めくくる。レイアウトとベースマップの切り替えは本実装で行ってもよい。最初の公開の範囲は [機能要件](../requirements/features.md#最初の公開の範囲) を参照。
 
 ## 未決定事項
 
