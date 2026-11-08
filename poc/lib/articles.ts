@@ -52,7 +52,7 @@ function readArticleFile(slug: string) {
 
   if (result.data.slug !== slug) {
     throw new Error(
-      `${slug}.mdのfront matterの${slug}がファイル名と一致しません`,
+      `${slug}.mdのfront matterの${result.data.slug}がファイル名と一致しません`,
     );
   }
 
