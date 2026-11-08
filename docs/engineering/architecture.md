@@ -42,6 +42,7 @@ PoCでは **Zod** で実装した（`poc/lib/schema.ts`）。
 - 条件付きキーは `pinmap` を識別子とする `z.discriminatedUnion` で表す。`pinmap: true` なら `location`・`summary` が必須、`false` なら持たない
 - 日付はYAMLパーサーが `Date` として渡すため、`Date` として検証し `YYYY-MM-DD` の文字列に変換する
 - 検証に失敗したらビルドを止める。エラーには記事のファイル名と違反したキーを表示する
+- front matterの `slug` とファイル名（`{slug}.md`）が一致しなければビルドを止める。URLはファイル名から作るので、一致を確かめないとfront matterの `slug` の間違いに気づけない。エラーにはファイル名とfront matterの値を表示する。Zodの検証の後に確かめる（検証前の値は型が `any` のため）
 
 ### 全文検索・サジェスト
 
@@ -204,11 +205,10 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 
 ## 次のステップ
 
-PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`）。続けて次を行う。
+PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` とファイル名の一致を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`）。続けて次を行う。
 
 - ピンマップのレイアウト（トップページのファーストビュー、PC・TB・SP）、ポップアップのリンクの見た目
 - ベースマップの切り替え（OpenStreetMap）
-- front matterの `slug` とファイル名の一致チェック（必要に応じて）
 - Pagefindの日本語の区切り方と前方一致の確認（検索語「2024」が本文の「2」に、「なああああ」が「な」「ない」に一致する理由）
 
 ## 未決定事項

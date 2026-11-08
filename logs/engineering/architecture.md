@@ -2975,3 +2975,64 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 
 ---
 
+## 日時:2026-11-08 09:36 JST
+
+```
+問題9: front matterの slug とファイル名の一致をビルド時に確かめる（poc/lib/articles.ts の readArticleFile）。
+1. 今のコードで、front matterの slug だけ変えるとどうなるか予想して確かめる
+2. 一致しなければ throw new Error でビルドを止める
+3. 間違っているとき・正しいときの両方で npm run build を確かめる
+```
+
+## 回答
+
+**2026-11-08 09:36 JST**
+
+---
+
+### 実装
+
+```ts
+const result = articleSchema.safeParse(data); // Zodで検証
+if (!result.success) {
+  throw new Error(…);
+}
+
+if (result.data.slug !== slug) {
+  throw new Error(
+    `${slug}.mdのfront matterの${result.data.slug}がファイル名と一致しません`,
+  );
+}
+```
+
+- 比べるのは、front matterの値（検証済みの `result.data.slug`）と、ファイル名から作った `slug`
+- 検証（`safeParse`）の後に置く
+
+### 学んだこと
+
+- チェックを入れる前は、front matterの `slug` はどこからも使われていなかった。`getArticleBySlug` の `{ ...frontMatter, slug }` で、同じ名前のキーは後に書いたほう（ファイル名の値）が残る。front matterを `tomigaya-x` にしてもエラーにならず、`/tomigaya/` は開けて `/tomigaya-x/` は開けない（エラーにならない間違い）
+- `!==` は型も値も含めて「同じでない」。`!=` は型を変換して比べるので使わない
+- 検証の後に置く理由: 検証前の `data`（`gray-matter` が返す）は型が `any` で、`slug` があるかも文字列かも分からない。検証後の `result.data` は、Zodが「文字列で必ずある」と保証している。`slug` を書き忘れた記事なら、先にZodが分かりやすいエラーを出す
+- トップページの `getPinmapItems()` は全記事を読むので、1本でも不正な記事があるとトップページもエラーになる
+- チェックは「間違っているときにエラーになる」と「正しいときにエラーにならない」の両方を確かめる。片方だけだと、常にエラーになるチェックを見逃す
+- エラーの文章には、直す人が必要な値を入れる。記事の移行をスクリプトでまとめて行うと、`tomigaya-x`・`Tomigaya`・末尾の空白など、何が書いてあったかで直し方が変わる
+
+### つまずいた点
+
+- 最初は `if (filePath !== slug)` と書いた。`filePath` はフルパス（`…/content/articles/akasaka-street.md`）なので、どの記事でも必ず一致せず、正しい `akasaka-street.md` でエラーになった。エラーが出たことで「チェックが働いた」と思いかけた
+- エラーの文章の2つ目を `${slug}` にした（コミット `b3d1f46`）。front matterが `tomigaya-x` でも `tomigaya` と出る。予想した文章も同じように間違っていたので「予想の通り」に見えた。`${result.data.slug}` に直した（`c516c5b`）
+- 問題3の予想「トップページは開ける」は外れた（上の `getPinmapItems()` の理由）
+- 予想を書く前に試してしまったことがあった
+
+### 確認結果
+
+- `tomigaya.md` を `slug: tomigaya-x` にすると、`npm run build` がslugの不一致のエラーで止まった（エラーの文章を直す前は `tomigaya.mdのfront matterのtomigayaがファイル名と一致しません`）
+- `slug: tomigaya` に戻すと、ビルドが成功した
+- エラーの文章を直したあと（`c516c5b`）は、`tomigaya.mdのfront matterのtomigaya-xがファイル名と一致しません` と、front matterの値が表示された
+
+### 次のステップ
+
+- その後の候補: レイアウト（ファーストビュー、PC・タブレット・スマートフォン）、ポップアップのリンクの見た目、ベースマップの切り替え（OSM）、Pagefindの日本語の区切り方の調査、記事ページへのYouTube埋め込み、QRコードで共有
+
+---
+

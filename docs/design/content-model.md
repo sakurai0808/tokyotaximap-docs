@@ -116,7 +116,7 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 | キー          | 型                    | 説明                                                                        |
 | ------------- | --------------------- | --------------------------------------------------------------------------- |
 | `title`       | string                | 記事タイトル                                                                |
-| `slug`        | string                | URLスラッグ（WordPressから引き継ぎ）                                        |
+| `slug`        | string                | URLスラッグ（WordPressから引き継ぎ）。ファイル名と一致させる（ビルド時に検証） |
 | `publishedAt` | string (`YYYY-MM-DD`) | 初回公開日。移行時はWordPressの公開日を引き継ぐ                             |
 | `updatedAt`   | string (`YYYY-MM-DD`) | 内容として意味のある最終更新日。表示の正とする（Gitのコミット日は使わない） |
 | `category`    | enum                  | [カテゴリ一覧](../requirements/content.md#単語系記事)                       |
