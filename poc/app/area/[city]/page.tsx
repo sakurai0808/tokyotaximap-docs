@@ -1,3 +1,4 @@
+import { getArticleSummariesByCity } from "@/lib/articles";
 import { cities, cityPaths } from "@/lib/schema";
 import { notFound } from "next/navigation";
 
@@ -17,6 +18,8 @@ export default async function CityPage({ params }: PageProps) {
   if (!cityName) {
     notFound();
   }
+
+  console.log(getArticleSummariesByCity(cityName));
 
   return <h1>{cityName}</h1>;
 }

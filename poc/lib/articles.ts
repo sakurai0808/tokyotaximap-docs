@@ -10,6 +10,7 @@ import {
   articleSchema,
   type Category,
   type ArticleFrontMatter,
+  type City,
 } from "./schema";
 import { z } from "zod";
 
@@ -144,4 +145,24 @@ export function getPinmapItems(): PinmapItem[] {
   }
 
   return pinmapItemList;
+}
+
+// 区名を受け取って、ArticleSummary(L33付近)を返す
+export function getArticleSummariesByCity(cityName: City): ArticleSummary[] {
+  const articleSummariesByCity: ArticleSummary[] = [];
+
+  for (const slug of getAllSlugs()) {
+    const { frontMatter } = readArticleFile(slug);
+
+    if (frontMatter.city.includes(cityName)) {
+      articleSummariesByCity.push({
+        slug: frontMatter.slug,
+        title: frontMatter.title,
+        category: frontMatter.category,
+        updatedAt: frontMatter.updatedAt,
+      });
+    }
+  }
+
+  return articleSummariesByCity;
 }
