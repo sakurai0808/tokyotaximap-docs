@@ -43,6 +43,17 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* 改行時につぶれないように空白文字で */}
           {article.updatedAt}
         </p>
+        {article.youtube && (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${article.youtube}`}
+            title={`${article.title}の動画`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="mb-8 aspect-video w-full"
+          ></iframe>
+        )}
         <article
           className="prose prose-zinc max-w-none"
           dangerouslySetInnerHTML={{ __html: article.contentHtml }} // remarkが作ったHTML文字列を埋め込む
