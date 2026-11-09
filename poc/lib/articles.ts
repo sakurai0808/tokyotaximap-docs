@@ -22,6 +22,9 @@ export type Article = ArticleFrontMatter & {
   contentHtml: string;
 };
 
+// 使えないslugを定義する
+const reservedSlugs = ["area", "search", "pagefind", "404"];
+
 // 全ての記事のデータの一覧を作る関数
 export function getAllSlugs(): string[] {
   return fs
@@ -55,6 +58,10 @@ function readArticleFile(slug: string) {
     throw new Error(
       `${slug}.mdのfront matterの${result.data.slug}がファイル名と一致しません`,
     );
+  }
+
+  if (reservedSlugs.includes(slug)) {
+    throw new Error(`${slug}.mdの「${slug}」はslugに使用することはできません`);
   }
 
   return { frontMatter: result.data, content }; // 検証済みのデータに「frontMatter」という名前をつけて、本文(content)と一緒にオブジェクトとして返す

@@ -26,7 +26,7 @@ export const cities = [
   "千代田区",
   "港区",
   "都心以外の区",
-] as const;
+] as const; // 値の一覧を型として使うので、「as const」
 
 export type City = (typeof cities)[number];
 
