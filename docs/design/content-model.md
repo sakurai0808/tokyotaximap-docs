@@ -4,7 +4,7 @@
 
 コンテンツはMarkdownで管理する。カテゴリや記事ごとに優先すべき情報は異なるため、編集者が重要なブロックを本文の上部へ配置する。
 
-記事URLは `https://tokyotaximap.com/{slug}/` 形式とし、パスprefixは付けない。既存WordPressサイトの英字スラッグを引き継ぐ。
+記事URLは `https://tokyotaximap.com/{slug}/` 形式とし、パスprefixは付けない。既存WordPressサイトの英字スラッグを引き継ぐ。区から探すのページは `/area/{英字}/` とする（[アプリケーション技術設計](../engineering/architecture.md#区から探す)）。
 
 ### ファイル配置
 
@@ -116,7 +116,7 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 | キー          | 型                    | 説明                                                                        |
 | ------------- | --------------------- | --------------------------------------------------------------------------- |
 | `title`       | string                | 記事タイトル                                                                |
-| `slug`        | string                | URLスラッグ（WordPressから引き継ぎ）。ファイル名と一致させる（ビルド時に検証） |
+| `slug`        | string                | URLスラッグ（WordPressから引き継ぎ）。ファイル名と一致させる。`area`・`search`・`pagefind`・`404` は使えない（どちらもビルド時に検証） |
 | `publishedAt` | string (`YYYY-MM-DD`) | 初回公開日。移行時はWordPressの公開日を引き継ぐ                             |
 | `updatedAt`   | string (`YYYY-MM-DD`) | 内容として意味のある最終更新日。表示の正とする（Gitのコミット日は使わない） |
 | `category`    | enum                  | [カテゴリ一覧](../requirements/content.md#単語系記事)                       |
@@ -128,6 +128,8 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 `city` の取りうる値は次の6つ。詳細は [コンテンツ構造](../requirements/content.md#区との紐づけ) を参照。
 
 - 渋谷区、新宿区、中央区、千代田区、港区、都心以外の区
+
+場所が2つの区にまたがる記事は、両方を書く（例: 赤坂通りは `[千代田区, 港区]`）。両方の区のページに出る。区のページのURLでは英字を使う（`shibuya`、`shinjuku`、`chuo`、`chiyoda`、`minato`、`others`）。
 
 日付キーについて:
 

@@ -3184,3 +3184,186 @@ youtube: z
 
 ---
 
+## 日時:2026-11-10 02:45 JST
+
+```
+（11-08 13:57）区から探す。区のページのURLの形は A（/area/shibuya/ のようにprefixと英字）にする
+（17:12）うーん??（generateStaticParams のキーを City にしてエラー）
+（20:54）うーむわけわからんくなってきた（getArticleSummariesByCity）
+（21:02）③がcityだと思ったけど、エラーが出るから違うのか。
+（21:09）console.logはどこに書くんですか
+（22:04）あかん、めちゃくちゃになってきた（区のページの一覧と「まだありません」）
+（11-10 01:28）slug: search の記事を作る実験。ビルドはエラーで止まらなかった
+（01:49）うーんエラーが出るな。どうやって配列の中身を取り出すんだっけ。。
+（02:17）区名から英字を取り出すcityPaths[c] これってどういう意味でしょうか
+（02:43）/area/ を足してリロードしてもだめだったが、リンクが ~/chiyoda/ のままでリロードしても意味がない。戻ってリンクを踏み直して確認した
+```
+
+## 回答
+
+**2026-11-10 02:45 JST**
+
+---
+
+### 決定
+
+- 区のページのURLは `/area/{英字}/`（`shibuya`、`shinjuku`、`chuo`、`chiyoda`、`minato`、`others`）
+- 理由: 記事が `/{slug}/` でprefixがないため、`/shibuya-ku/` のようなprefixなしの形は、区や記事が増えるたびにslugとのぶつかりを確かめ続ける必要がある。`/area/` の下なら、気をつけるのは `area` をslugに使わないことだけ。日本語のURL（`/area/渋谷区/`）は、共有すると `%E6%B8%8B…` の形に崩れ、書き出すフォルダ名も日本語になる
+- 記事の `slug` に `area`・`search`・`pagefind`・`404` を使えないようにし、使っていたらビルドを止める
+- 区のページはPagefindの検索の対象にしない（`data-pagefind-body` を付けない）。記事のタイトルの寄せ集めなので、検索結果に出るとうるさくなる
+
+### 実装
+
+```ts
+// poc/lib/schema.ts（cities の下）
+export type City = (typeof cities)[number];
+
+export const cityPaths: Record<City, string> = {
+  渋谷区: "shibuya",
+  新宿区: "shinjuku",
+  中央区: "chuo",
+  千代田区: "chiyoda",
+  港区: "minato",
+  都心以外の区: "others",
+};
+```
+
+```ts
+// poc/lib/articles.ts
+const reservedSlugs = ["area", "search", "pagefind", "404"];
+
+// readArticleFile の中（slugとファイル名の一致チェックの後）
+if (reservedSlugs.includes(slug)) {
+  throw new Error(`${slug}.mdの「${slug}」はslugに使用することはできません`);
+}
+
+// 末尾
+export function getArticleSummariesByCity(cityName: City): ArticleSummary[] {
+  const articleSummariesByCity: ArticleSummary[] = [];
+
+  for (const slug of getAllSlugs()) {
+    const { frontMatter } = readArticleFile(slug);
+
+    if (frontMatter.city.includes(cityName)) {
+      articleSummariesByCity.push({
+        slug: frontMatter.slug,
+        title: frontMatter.title,
+        category: frontMatter.category,
+        updatedAt: frontMatter.updatedAt,
+      });
+    }
+  }
+
+  return articleSummariesByCity;
+}
+```
+
+```tsx
+// poc/app/area/[city]/page.tsx
+export async function generateStaticParams() {
+  return Object.values(cityPaths).map((city) => ({ city }));
+}
+
+export default async function CityPage({ params }: PageProps) {
+  const { city } = await params;
+  const cityName = cities.find((c) => city === cityPaths[c]);
+
+  if (!cityName) {
+    notFound();
+  }
+
+  const articles = getArticleSummariesByCity(cityName);
+
+  return (
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <h1 className="mb-6 text-2xl font-bold">{cityName}</h1>
+      {articles.length === 0 ? (
+        <p>この区の記事はまだありません</p>
+      ) : (
+        <ul className="list-disc space-y-2 pl-6">
+          {articles.map((article) => (
+            <li key={article.slug}>…（トップページの記事一覧と同じ）</li>
+          ))}
+        </ul>
+      )}
+    </main>
+  );
+}
+```
+
+```tsx
+// poc/app/page.tsx（ピンマップと記事一覧の間）
+<h2>区から探す</h2>
+<ul className="list-disc space-y-2 pl-6">
+  {cities.map((c) => (
+    <li key={cityPaths[c]}>
+      <Link href={`/area/${cityPaths[c]}/`} className="text-blue-600 underline">
+        {c}
+      </Link>
+    </li>
+  ))}
+</ul>
+```
+
+- トップページの記事へのリンクを `/${article.slug}` から `/${article.slug}/` に直した（`trailingSlash: true` とピンマップのポップアップに合わせる）
+- コミット: `09006c4`（対応表と区のページの枠）、`dc555e3`（区で絞り込む関数）、`ec224c6`（区のページの一覧、トップページのリンクの `/`）、`ee9e05f`（0本の区の表示）、`04c5e4a`（使えないslug）。トップページの「区から探す」の入口は、このログを書いた時点で未コミット
+
+### 学んだこと
+
+- `Record<キーの型, 値の型>` は「決まったキーが全部そろったオブジェクト」の型。キーが足りないと、オブジェクト全体（変数名）にエラーが付く。余分なキー（打ち間違い）は、そのキーにエラーが付く。打ち間違いでは「余分なキー」と「本来のキーの不足」の2つの間違いがあるのに、エラーは1つしか出なかった。1つ直したら、もう一度チェックする
+- `tsx` はTypeScriptを実行する別の道具。型のチェックは `tsc`
+- `generateStaticParams` が返すオブジェクトのキーは、フォルダ名 `[city]`・`params` の中の名前と同じにする。`({ city })` は `({ city: city })` の省略形で、キーと変数の名前が同じときだけ使える。型の名前 `City` とURLの部品の名前 `city` は別のもの
+- `{ City: city }`（キーの打ち間違い）は `tsc` ではエラーにならず、devで開いたときに初めてエラーになる。返す型を `Promise<{ city: string }[]>` と書けば、`tsc` でも見つけられる
+- `page.tsx` は `export default` でReactコンポーネントを渡すのが決まり。ないと「The default export is not a React Component」のエラーになる
+- `配列.find((x) => 条件)` は条件に合う最初の1つを返し、なければ `undefined`。`filter` は合うもの全部を配列で返し、なければ `[]`
+- `オブジェクト[キー]` で値を取り出す。`[ ]` の中にはキーの入った変数も書ける（`cityPaths[c]`）。`cityPaths.c` は「`c` という名前のキー」を探すのでエラーになる
+- `if (!cityName) { notFound(); }` の後では、TypeScriptが `cityName` の型を `City | undefined` から `City` に絞り込む。`if` より前で `getArticleSummariesByCity(cityName)` に渡すとエラー（`TS2345`）。いっぽう `<h1>{cityName}</h1>` は `undefined` も受け付けるのでエラーにならない。受け取り口の型を書いておくと、渡し間違いを `tsc` が止めてくれる
+- 関数の中で使える名前は、引数の名前と、関数の中で作った名前。ほかの関数（`page.tsx` の `city`）の変数は見えない。`frontMatter.city` の `city` はオブジェクトの部品の名前で、単独の変数ではない
+- `return` より後の行は実行されない。関数の `}` の外に書いた行は、その関数の変数を使えない
+- `配列.includes(値)` は、配列の要素に同じものがあれば `true`。文字列にも `includes` があり、こちらは「文字の並びが含まれるか」。`slug.includes("area")` はエラーにならずに `akasaka-area-guide` のようなslugまで当たってしまうので、箱（配列）の側から呼んでいるかを確かめる
+- `as const` は、値の一覧を型として使うとき（`z.enum`、`Record` のキー）に付ける。何が来るか分からない値を照らし合わせる一覧（`reservedSlugs`）に付けると、`includes(slug)` に `string` を渡せずエラーになる
+- `[]` と `"港区"` のように、配列と文字列を `===` で比べると決して等しくならない。TypeScriptは「no overlap」のエラーで止める（なければ、どの区も0本になる）
+- JSXで「0本なら別の表示」は `{条件 ? (A) : (B)}`。`(` は `?` の後。`<ul>` の中に入れてよいのは `<li>` だけ
+- `.map` でJSXを並べたら `key` を付ける。`key` を消しても、`tsc` もプロジェクトのESLintの設定も何も言わなかった。一覧が後から変わる場所（ピンマップの絞り込み）では、表示がずれる原因になる
+- `href` の先頭の `/` は「サイトの一番上から」。`/` がないと今いる場所からになる。区のリンクに `/area` を付け忘れると `/chiyoda/` が記事のページとして扱われ、「missing param」のエラーになった
+- 静的エクスポートでは、URLとファイルの置き場所が1対1（`/area/chiyoda/` → `out/area/chiyoda/index.html`）。devは開かれたページをその場で作るので、対応表にない値でもページを作ろうとする
+- 記事とほかのページが同じURLを作るとき、ビルドはエラーにならず、片方だけが書き出される。ビルドのログの `Route (app)` に同じURLが2回出るのが唯一のしるし
+- リロードは今いるURLを読み直すだけ。リンクを直したら、リンクのあるページに戻って踏み直す
+- ターミナルの `[browser] A tree hydrated but …` は、ブラウザの拡張機能（Google Analyticsのオプトアウト）が `<html>` に属性を足したことによるもので、自分のコードの間違いではない
+
+### つまずいた点
+
+- `(b)` を試した後、`schema.ts` の `渋谷` を `渋谷区` に戻し忘れた
+- `generateStaticParams` で `({ City: city })` と書き、ページ本体（`export default`）も書いていなかった
+- `{ City: city }` が `tsc` でエラーになるかの確認で、矢印の左側（受け取る側）に書いてしまい、2回、別の形を確かめた。こちらの説明で①②を2か所に使ったのも紛らわしかった
+- `cityPaths[]` の `[ ]` の中を空にした
+- `getArticleSummariesByCity` で、引数がない、返す型が `City[]`、ループの変数（中身はslug）を `city` と名付けた、`return` がない、の4つ。`city` という名前が「受け取る区名」「ループのslug」「`frontMatter.city`」の3つに付いていて混乱した
+- `includes(city)` と書いた（関数の中に `city` はなく、`cityName`）
+- `console.log` を関数の `}` の外に書いた
+- 港区の本数を1本と予想した（区が2つある `akasaka-street` を数え忘れた）
+- 一覧と「まだありません」を一度に書こうとして、`article`（1本）と `articles`（一覧）の取り違え、`.map` の抜け、`(` の位置、`<ul>` の入れ子が重なった。トップページの `<ul>` をそのまま貼る段階と、`? :` で包む段階に分けて解決した
+- `if` を書き忘れたときの表示を「shibuy が出る」と予想した（実際は空の `<h1>`）
+- `key` を消すと注意が出ると予想した（何も出なかった）
+- `out/area/` にフォルダはできないと予想した（6つできた）
+- `result.data.slug.includes(notUseSlug)` と箱と中身を逆にした
+- `as const` を付けたときのエラーは予想できなかった
+- トップページの区のリンクに `/area` を付け忘れた。`href` に区名そのもの（`c`）を入れたとき `tsc` がエラーにすると予想した（エラーにならない）
+
+### 確認結果
+
+- `cityPaths` の区を1つ消す・キーを打ち間違えると `tsc` のエラーになり、正しいときはエラーにならなかった
+- devで、`/area/shibuya/` に「渋谷区」、`/area/others/` に「都心以外の区」、`/area/shibuy/` は404
+- 記事の本数: 千代田区3本、港区2本、渋谷区1本、新宿区・中央区・都心以外の区は0本（「この区の記事はまだありません」）
+- 区のページの記事のリンクで `/{slug}/` の記事に移った
+- `npm run build` で `out/area/{6つの英字}/index.html` が書き出された。`http://localhost:1414/area/shibuy/` はブラウザの404（「この localhost ページが見つかりません」）。Pagefindは `Found 16 files` で `Indexed 5 pages`
+- `slug: search` の記事を作ると、ビルドは止まらず、`out/search/index.html` は検索ページ（記事は書き出されず、`Indexed 5 pages` のまま）。チェックを足した後は、同じ記事でビルドがエラーで止まり、記事を消すと通った（`Indexed 5 pages`）
+- トップページの「千代田区」から `/area/chiyoda/` に移り、3本出た。`href` を区名そのものにすると `tsc` はエラーにせず、`/area/千代田区/` で404になった
+
+### 次のステップ
+
+- 技術検証の残り: Pagefindの日本語の区切り方と前方一致の調査
+- ホスティングを決める前の整理（商用の扱い、ドメインの管理場所、画像の量、アクセス数、`out/404.html` を404の画面に使えるか）
+- 本実装で行ってもよいもの: ピンマップのレイアウト、ポップアップのリンクの見た目、ベースマップの切り替え（OSM）。区のページの見た目とトップページでの入口の置き場所も本実装で決める
+
+---
+

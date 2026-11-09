@@ -30,6 +30,8 @@ Markdown記事にYAML front matterを付与する。キー定義・編集ルー�
 
 - 形式: `/{slug}/`（パスprefixなし）
 - `slug` は既存WordPressサイトの英字スラッグを引き継ぐ
+- 区から探すのページは `/area/{英字}/`（例: `/area/chiyoda/`）。詳しくは [区から探す](#区から探す)
+- 記事と同じ階層にあるページ・フォルダの名前（`area`・`search`・`pagefind`・`404`）は、記事の `slug` に使えない（ビルド時に検証）
 
 ### スキーマ検証
 
@@ -44,6 +46,7 @@ PoCでは **Zod** で実装した（`poc/lib/schema.ts`）。
 - 検証に失敗したらビルドを止める。エラーには記事のファイル名と違反したキーを表示する
 - `youtube` は動画IDだけを書き、`z.string().regex(/^[A-Za-z0-9_-]{11}$/, "…").optional()` で形を確かめる。URLを書くとビルドが止まる。`^`・`$` がないと、URLの中の11文字に当たって通ってしまう
 - front matterの `slug` とファイル名（`{slug}.md`）が一致しなければビルドを止める。URLはファイル名から作るので、一致を確かめないとfront matterの `slug` の間違いに気づけない。エラーにはファイル名とfront matterの値を表示する。Zodの検証の後に確かめる（検証前の値は型が `any` のため）
+- `slug` が `area`・`search`・`pagefind`・`404` のどれかならビルドを止める（`poc/lib/articles.ts` の `reservedSlugs`）。記事とほかのページが同じURLを作ろうとしても、ビルドはエラーにならず、片方だけが書き出される（`slug: search` の実験では検索ページが残り、記事はURLでも検索でも見つからなくなった）。一覧は `as const` を付けない `string[]` にする（付けると `reservedSlugs.includes(slug)` に `string` を渡せず、TypeScriptのエラーになる）。`_next`・`_not-found` などは、将来 `slug` の形（英小文字・数字・ハイフン）を正規表現で縛れば防げる
 
 ### 全文検索・サジェスト
 
@@ -221,21 +224,56 @@ front matterの `youtube` には動画IDだけを書く（URLは書かない）�
 
 dev、`npm run build` → `npx pagefind --site out --serve` の両方で再生を確認済み。
 
+### 区から探す
+
+区ごとの記事一覧ページを、静的エクスポートで区の数（6つ）だけ書き出す。
+
+| 区名         | URL               |
+| ------------ | ----------------- |
+| 渋谷区       | `/area/shibuya/`  |
+| 新宿区       | `/area/shinjuku/` |
+| 中央区       | `/area/chuo/`     |
+| 千代田区     | `/area/chiyoda/`  |
+| 港区         | `/area/minato/`   |
+| 都心以外の区 | `/area/others/`   |
+
+URLの形を `/area/{英字}/` にした理由:
+
+- 記事が `/{slug}/` でprefixがないため、`/chiyoda/` のような形だと記事の `slug` とぶつかるおそれがある。`/area/` の下に置けば、気をつけるのは記事の `slug` に `area` を使わないことだけになる
+- 日本語のURL（`/area/千代田区/`）は、共有したときに `%E5%8D%83…` の形に崩れて読めない。書き出すフォルダ名も日本語になる
+
+構成（PoC）:
+
+- `poc/lib/schema.ts`: `City` 型（`(typeof cities)[number]`）と、区名と英字の対応表 `cityPaths: Record<City, string>`。全区が必須なので、区の書き漏らし（キーの不足）や打ち間違い（余分なキー）は型エラーになる
+- `poc/lib/articles.ts` の `getArticleSummariesByCity(cityName: City)`: 全記事から、front matterの `city`（配列）に `cityName` が含まれるもの（`frontMatter.city.includes(cityName)`）を集め、`ArticleSummary` の配列で返す。区が2つある記事（`akasaka-street` の `[千代田区, 港区]`）は両方の区に出る
+- `poc/app/area/[city]/page.tsx`:
+  - `generateStaticParams` は `Object.values(cityPaths).map((city) => ({ city }))`。返すオブジェクトのキーはフォルダ名 `[city]` と同じにする。`{ City: city }` のように違えても `tsc` はエラーにせず、devで開いたときに「missing param」のエラーになる
+  - URLの英字から区名に戻す（`cities.find((c) => city === cityPaths[c])`）。見つからなければ `notFound()`。`if` の後では `cityName` の型が `City | undefined` から `City` に絞り込まれるので、`getArticleSummariesByCity` に渡せる
+  - 記事が0本の区では「この区の記事はまだありません」、それ以外は記事の一覧（タイトルのリンク、カテゴリ、更新日）を出す
+- `poc/app/page.tsx`: 「区から探す」の見出しと、6区のリンク（`` `/area/${cityPaths[c]}/` ``）。区のページ・記事へのリンクは、`/` で始まり `/` で終わる形にそろえる
+
+devとビルドの違い:
+
+- devは開かれたURLのページをその場で作る。対応表にない `/area/shibuy/` では `CityPage` が動き、`notFound()` の404になる（`if` がないと、空の `<h1>` がエラーなしで出る）
+- ビルドでは `out/area/{英字}/index.html` が6つだけ書き出される。対応表にないURLはファイルがないので、ホスティングの404になる（`notFound()` は動かない）。`out/404.html` を404の画面として使えるかはホスティングによる
+- Pagefindは `data-pagefind-body` のあるページだけを索引するため、区のページは検索の対象にならない（`Indexed 5 pages` のまま）。区のページは記事のタイトルの寄せ集めなので、検索結果に出ないほうがよい
+
+区のページはdevとビルド（`npm run build` → `npx pagefind --site out --serve`）の両方で、トップページの入口はdevで確認済み。
+
 ## 次のステップ
 
-PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` とファイル名の一致を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）、記事ページへのYouTubeの埋め込みまで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`。主要駅の `tokyostation-yaesu` に `youtube` あり）。続けて次を行う。
+PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` とファイル名の一致、使えない `slug` を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）、記事ページへのYouTubeの埋め込み、区から探す（`/area/{英字}/` の一覧ページとトップページの入口）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`。主要駅の `tokyostation-yaesu` に `youtube` あり）。続けて次を行う。
 
 - Pagefindの日本語の区切り方と前方一致の確認（検索語「2024」が本文の「2」に、「なああああ」が「な」「ない」に一致する理由）
-- 区から探す（区ごとの記事一覧ページを静的エクスポートで書き出す。記事が `/{slug}/` でprefixなしのため、区のページのURLの形を先に決める）
 - ピンマップのレイアウト（トップページのファーストビュー、PC・TB・SP）、ポップアップのリンクの見た目
 - ベースマップの切り替え（OpenStreetMap）
 
-上の4つのうち、技術的な不確かさが残るPagefind・区から探すを先に確かめ、技術検証を締めくくる。レイアウトとベースマップの切り替えは本実装で行ってもよい。最初の公開の範囲は [機能要件](../requirements/features.md#最初の公開の範囲) を参照。
+上の3つのうち、技術的な不確かさが残るPagefindを確かめ、技術検証を締めくくる。レイアウトとベースマップの切り替えは本実装で行ってもよい。最初の公開の範囲は [機能要件](../requirements/features.md#最初の公開の範囲) を参照。
 
 ## 未決定事項
 
 - `tags` のenumリスト
-- ホスティング・デプロイ・監視
+- ホスティング・デプロイ・監視（`out/404.html` を404の画面として使えるかも確かめる）
 - ミニ単語帳のデータ形式とPagefindへの載せ方（最初の公開後）
 - 地図埋め込みの方式
 - ピンマップの一覧表示（サイドバー）の形（本実装のデザインの段階で決める）
