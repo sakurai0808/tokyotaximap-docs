@@ -10,7 +10,7 @@ type PageProps = {
 };
 
 // どのURLを作るか
-export async function generateStaticParams() {
+export async function generateStaticParams(): Promise<{ city: string }[]> {
   return Object.values(cityPaths).map((city) => ({ city }));
 }
 
