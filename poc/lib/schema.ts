@@ -45,7 +45,9 @@ const dateSchema = z.date().transform((d) => d.toISOString().slice(0, 10)); // D
 // メソッドチェーンの順番に注意。中身を確かめるルールを先に書き、包むものは最後に記述する
 const baseSchema = z.object({
   title: z.string().min(1),
-  slug: z.string(),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, "slugに使えるのは英小文字・数字・ハイフンです"), // スラッグを縛る
   category: z.enum(categories),
   city: z.array(z.enum(cities)),
   keywords: z.array(z.string()),
