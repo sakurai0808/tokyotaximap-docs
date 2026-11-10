@@ -3540,3 +3540,62 @@ throw new Error(
 
 ---
 
+## 日時:2026-11-11 01:47 JST
+
+```
+（11-11 01:24）OK、ログに残してからgenerateStaticParamsの作業にいきましょう
+（01:35）フンっ（返す型を書いた）
+（01:43）B エラーになる でもよくわからない
+（01:43）C 表示は変わらない もともと型に合致しているから
+```
+
+## 回答
+
+**2026-11-11 01:47 JST**
+
+---
+
+### 決定
+
+- `generateStaticParams` の返す型を `Promise<{ city: string }[]>` と書く。キーの打ち間違いを、devで開く前に `tsc` で見つけられるようにする
+
+### 実装
+
+```tsx
+// poc/app/area/[city]/page.tsx
+export async function generateStaticParams(): Promise<{ city: string }[]> {
+  return Object.values(cityPaths).map((city) => ({ city }));
+}
+```
+
+- コミット: `bb6dbe8`
+- docs/engineering/architecture.md の「区から探す」の `generateStaticParams` の説明を、返す型を書いた形に直した
+
+### 学んだこと
+
+- 関数の返す型は、引数の `( )` の後ろに `: 型` と書く（`async function 名前(): 返す型 {`）。`async` の関数は `Promise< >` で包む（`poc/lib/articles.ts` の `getArticleBySlug(slug: string): Promise<Article | null>` と同じ形）
+- `{ city: string }` は1つ分（`{ city: "shibuya" }`）、`{ city: string }[]` はその配列（6つ）。`params: Promise<{ city: string }>` は1つ分
+- `tsc` のエラーの読み方: `page.tsx:14:3` はファイル名・行・文字の位置。`error` はエラー（注意ではない）。`TS2322` は「この型は、ここに入れられない」。`Type A is not assignable to type B` の A が実際に返そうとしたもの、B が約束した型。`'city' is declared here` は約束した場所（13行目）を指す
+- 返す型は予約票のようなもの。`tsc` は予約票（13行目）と実際に乗せたもの（14行目）を見比べる
+- `{ City: city }` には「余分な `City`」と「`city` の不足」の2つの間違いがあるが、エラーは「`city` の不足」の1つだけだった（`cityPaths` のキーの打ち間違いと同じ）
+- 型の注釈は `tsc` が確かめるためだけのもので、実行するときには消える。型を書いても書かなくても、作られるページは同じ
+
+### つまずいた点
+
+- 問題B で、エラーになることは予想できたが、エラーの文の意味がわからなかった
+
+### 確認結果
+
+- 問題A: 返す型を書いた状態で `npx tsc --noEmit` はエラーなし（予想どおり）
+- 問題B: 14行目を `({ City: city })` にすると、`app/area/[city]/page.tsx:14:3 - error TS2322: Type '{ City: string; }[]' is not assignable to type '{ city: string; }[]'.`（`Property 'city' is missing …`、`13:57 'city' is declared here.`）。`Found 1 error`。型を書く前は `tsc` でエラーにならなかったもの
+- 問題C: `({ city })` に戻し、devの `/area/shibuya/` の表示は型を書く前と変わらなかった（予想どおり）
+
+### 次のステップ
+
+- ホスティングを決める前の整理（商用の扱い、ドメインの管理場所、画像の量、アクセス数、`out/404.html` を404の画面に使えるか）
+- 本実装: ピンマップのレイアウト、ポップアップのリンクの見た目、ベースマップの切り替え（OSM）、区のページの見た目とトップページでの入口の置き場所、検索で関係の薄い記事まで当たることへの対策
+- 記事の移行の前に、既存WordPressのslugが英小文字・数字・ハイフンに収まっているかを確かめる
+- 任意: slugのハイフンの位置を縛る
+
+---
+

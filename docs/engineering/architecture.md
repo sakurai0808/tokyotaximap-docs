@@ -273,7 +273,7 @@ URLの形を `/area/{英字}/` にした理由:
 - `poc/lib/schema.ts`: `City` 型（`(typeof cities)[number]`）と、区名と英字の対応表 `cityPaths: Record<City, string>`。全区が必須なので、区の書き漏らし（キーの不足）や打ち間違い（余分なキー）は型エラーになる
 - `poc/lib/articles.ts` の `getArticleSummariesByCity(cityName: City)`: 全記事から、front matterの `city`（配列）に `cityName` が含まれるもの（`frontMatter.city.includes(cityName)`）を集め、`ArticleSummary` の配列で返す。区が2つある記事（`akasaka-street` の `[千代田区, 港区]`）は両方の区に出る
 - `poc/app/area/[city]/page.tsx`:
-  - `generateStaticParams` は `Object.values(cityPaths).map((city) => ({ city }))`。返すオブジェクトのキーはフォルダ名 `[city]` と同じにする。`{ City: city }` のように違えても `tsc` はエラーにせず、devで開いたときに「missing param」のエラーになる
+  - `generateStaticParams` は `Object.values(cityPaths).map((city) => ({ city }))`。返すオブジェクトのキーはフォルダ名 `[city]` と同じにする。返す型を `Promise<{ city: string }[]>` と書く。書かないと、`{ City: city }` のようにキーを違えても `tsc` はエラーにせず、devで開いたときに初めて「missing param」のエラーになる。書いておけば `tsc` のエラー（`TS2322`）で見つかる
   - URLの英字から区名に戻す（`cities.find((c) => city === cityPaths[c])`）。見つからなければ `notFound()`。`if` の後では `cityName` の型が `City | undefined` から `City` に絞り込まれるので、`getArticleSummariesByCity` に渡せる
   - 記事が0本の区では「この区の記事はまだありません」、それ以外は記事の一覧（タイトルのリンク、カテゴリ、更新日）を出す
 - `poc/app/page.tsx`: 「区から探す」の見出しと、6区のリンク（`` `/area/${cityPaths[c]}/` ``）。区のページ・記事へのリンクは、`/` で始まり `/` で終わる形にそろえる
