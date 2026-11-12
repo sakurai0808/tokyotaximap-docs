@@ -297,12 +297,12 @@ PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zod�
 - 区のページの見た目と、トップページでの入口の置き場所
 - 検索で関係の薄い記事まで当たることへの対策
 
-ホスティングはCloudflare Pages（無料プラン）に決めた。理由、404の画面、試験版、ドメインの切り替えは [インフラ設計](infrastructure.md) を参照。最初の公開の範囲は [機能要件](../requirements/features.md#最初の公開の範囲) を参照。
+ホスティングはCloudflare Pages（無料プラン）に決めた。理由、ビルドの設定、404の画面、試験版、ドメインの切り替えは [インフラ設計](infrastructure.md) を参照。試験版は `https://tokyotaximap-docs.pages.dev/` に置いた（2026-11-12）。最初の公開の範囲は [機能要件](../requirements/features.md#最初の公開の範囲) を参照。
 
 ## 未決定事項
 
 - `tags` のenumリスト
-- デプロイの細かい手順・監視（ホスティングはCloudflare Pagesに決定。[インフラ設計](infrastructure.md)）
+- `poc/` から本実装への移り方・監視（ビルドの設定は決定。[インフラ設計](infrastructure.md#ビルドの設定)）
 - ミニ単語帳のデータ形式とPagefindへの載せ方（最初の公開後）
 - 地図埋め込みの方式
 - ピンマップの一覧表示（サイドバー）の形（本実装のデザインの段階で決める）

@@ -16,16 +16,61 @@
 - 無料プランの上限は1サイト2万ファイル、1ファイル25MiB。PoCの `out/` は175ファイル・2.4MB。記事約300本と画像361枚を足しても届かない
 - 次点はロリポップ（現行の契約）に `out/` を置く方法。ドメインの設定は変えずに済むが、更新のたびにファイルを上げる仕組みが要る
 
+### ビルドの設定
+
+2026-11-12にGitHubのリポジトリとつないで設定した。`main` へのプッシュで、Cloudflareがビルドして公開する。
+
+| 項目 | 値 | 理由 |
+|---|---|---|
+| Project name | `tokyotaximap-docs` | URLが `tokyotaximap-docs.pages.dev` になる |
+| Production branch | `main` | |
+| Framework preset | `None` | 「Next.js (Static HTML Export)」を選ぶとビルドの命令が `npx next build` になり、Pagefindが動かない |
+| Build command | `npm run build` | `poc/package.json` の `build` が `next build` のあとにPagefindまで実行する |
+| Build output directory | `out` | Root directoryから見た場所（`poc/out`） |
+| Root directory | `poc` | `package.json` と `package-lock.json` が `poc/` にある。指定しないとリポジトリのいちばん上で作業を始め、部品を入れられない |
+| Environment variables | なし | Node.jsは指定しなくても22.23.4（手元はv22.21.0、同じ22の系列） |
+
+- GitHubとの連携では、Cloudflareに渡す範囲を「Only select repositories」で `tokyotaximap-docs` だけにした
+- ビルドのログで `Indexed 5 pages` を確かめた（手元と同じ。`data-pagefind-body` は記事ページだけ）
+
 ### 404の画面
 
 Cloudflare Pagesは、いちばん上に `404.html` があれば、見つからないURLでそれを出す（同じフォルダから上へ順に `404.html` を探す）。Next.jsの静的エクスポートは `out/404.html` を書き出すので、これが使われる。
 
 いちばん上に `404.html` がないと、1ページだけのアプリ（SPA）とみなされ、どのURLにもトップページを返す。存在しない記事のURLでもトップページが出て、エラーにならずに間違った動きになるので、`out/404.html` が書き出されていることを確かめる。
 
+試験版で、ない記事（`/no-such-page/`）が404で「This page could not be found.」の画面になり、ある記事（`/tomigaya/`）が200になることを確かめた（2026-11-12）。
+
+### URL末尾の `/`
+
+`/tomigaya` を開くと、Cloudflare Pagesは308（移転）で `/tomigaya/` に移す。`out/tomigaya/index.html` があるため。`trailingSlash: true` で書き出したURLの形にそろうので、同じ記事が2つのURLに分かれない（2026-11-12に確認）。
+
 ### 試験版
 
-- Cloudflare Pagesが無料でくれる `…pages.dev` のURLで公開する（2026年12月下旬、30本ほど）
+- Cloudflare Pagesが無料でくれる `…pages.dev` のURLで公開する（2026年12月下旬、30本ほど）。URLは `https://tokyotaximap-docs.pages.dev/`
 - プレビューの公開には `X-Robots-Tag: noindex` が自動で付くが、本番扱いの `pages.dev` には付かない。試験版は現行サイトと同じ記事を持つので、`_headers` ファイルで `noindex` を付け、検索結果に出さない
+
+`poc/public/_headers` に次のように書いた。`public/` の中身はビルドで `out/` のいちばん上にそのまま写される。
+
+```text
+/*
+  X-Robots-Tag: noindex
+```
+
+- 1行目はURLの形。`/*` はどのドメインで開かれても、すべてのURLに当たる。`https://tokyotaximap.com/*` のようにドメインを書くと、試験版（`pages.dev`）には効かず、本番の公開のあとに本番のサイトにだけ付いてしまう
+- ヘッダーはビルドのときではなく、ページを配るときにサーバーが付ける。手元の `npx pagefind --site out --serve`（`localhost:1414`）は `_headers` を読まないので、付かない
+- 試験版で、トップページ・記事ページ・404のページのすべてに `x-robots-tag: noindex` が付くことを確かめた（2026-11-12）
+- **本番の公開のときに、この `noindex` を外す。** 残したままだと、本番のサイトが検索結果から消えていく
+
+### 試験版で確かめたこと（2026-11-12）
+
+| 確かめたこと | 結果 |
+|---|---|
+| 検索 `/search/?q=富ヶ谷` | 1本（富ヶ谷(交差点)）。`/pagefind/pagefind.js` は200 |
+| 検索 `/search/?q=ラーメン` | 0本 |
+| ピンマップ | ピンは4本（`pinmap: true` の4本） |
+
+ブラウザの開発者ツールで番号（Status）を見るときは、「Network」のタブの **Disable cache** に印を付ける。付けないと、ブラウザの写し（キャッシュ）を使って304（変わっていない）になることがある。
 
 ### Cloudflare PagesとWorkers
 
@@ -56,7 +101,8 @@ Cloudflareは同じことができるWorkers（静的アセット）を勧めて
 
 ## 未決定事項
 
-- デプロイの細かい手順（ビルドコマンド、Pagefindの実行、`poc/` から本実装への移り方）
+- `poc/` から本実装への移り方（ビルドの設定の Root directory も変わる）
+- ビルドを起こすフォルダの絞り込み（Build watch paths。今は `docs/` や `logs/` だけの変更でもビルドが動く）
 - CDN・キャッシュ方針
 - 監視・ログ
 - バックアップ

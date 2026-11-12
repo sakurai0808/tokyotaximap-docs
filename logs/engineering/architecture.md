@@ -3771,3 +3771,90 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 
 ---
 
+## 日時:2026-11-13 05:15 JST
+
+```
+（11-12 20:18）試験版の公開の準備: Cloudflare Pagesに今のPoCを置く（おすすめ）
+（22:09）_headers こうでしょうか?（1行目が https://tokyotaximap.com/* 、2行目が空白4つの字下げ）
+（22:17）A poc/out/_headers 結果: 予想の通り／B 違う 結果: 同じ／C 付いている ビルド時にheaderに付与される設定のため 結果: ついていない
+（22:33）プロジェクトの名前はそれでOKです!
+（22:43）D 22.23.4 結果: その通り／E 5 poc内で独立した記事は5つあるから 結果: 数字はとりあえず同じ
+（22:51）F 付いている 結果: その通り／G ある記事: 200 結果: 304、ない記事: 404 結果: 304／H / がついていない 結果: / が足されている
+（22:56）/tomigaya/ 200、/no-such-page/ 404。404 This page could not be found. のページがちゃんと出てます。
+（11-13 05:09）I 1本、tomigaya.md、200 結果: 予想通り／J 0本 結果: 予想通り／K 4本 結果: 予想通り
+```
+
+## 回答
+
+**2026-11-13 05:15 JST**
+
+---
+
+### 決定
+
+- 試験版を Cloudflare Pages の `https://tokyotaximap-docs.pages.dev/` に置く（プロジェクト名 `tokyotaximap-docs`）
+- ビルドの設定: Production branch `main`、Framework preset `None`、Build command `npm run build`、Build output directory `out`、Root directory `poc`、環境変数なし
+- GitHubとの連携でCloudflareに渡す範囲は「Only select repositories」で `tokyotaximap-docs` だけ
+- すべてのページに `X-Robots-Tag: noindex` を付ける（`_headers` の `/*`）。本番の公開のときに外す
+
+### 実装
+
+- `poc/public/_headers` を自分で書いた（`5b3e42b` 「(Agent解説使用)update: 試験版を検索結果に出さないよう、_headersでnoindexを付ける」）
+
+```text
+/*
+  X-Robots-Tag: noindex
+```
+
+- Cloudflareのアカウントを作り、Workers & Pages → Create application → Pages → Connect to Git で設定した。**Save and Deploy** の前に、画面のスクリーンショットで値を確かめた
+- docs/engineering/infrastructure.md に「ビルドの設定」「URL末尾の `/`」「試験版で確かめたこと」の節と、`_headers` の書き方・本番で外すことを足した。未決定事項の「デプロイの細かい手順」を「`poc/` から本実装への移り方」と「ビルドを起こすフォルダの絞り込み」に分けた
+- docs/engineering/architecture.md と docs/decisions/0001-use-nextjs.md の「デプロイの細かい手順」を、ビルドの設定は決定済みとして直した
+
+### 学んだこと
+
+- ヘッダーは、ページの「封筒の表書き」。画面には出ないが、ブラウザや検索エンジンのロボットが読む。noindexは「検索結果に載せないで」という注意書き
+- `_headers` は、配達員（ページを配るサーバー）への指示書。ヘッダーはビルドのときではなく、ページを配るときに付く。読むかどうかはサーバーしだいで、Cloudflare Pagesは読み、手元の `npx pagefind --site out --serve` は読まない
+- `public/` の中身は、ビルドで `out/` のいちばん上へコピー機で写すようにそのまま移る。Next.jsは中身を読まない
+- `_headers` の1行目はURLの形。`/*` の `*` は「何でもよい」。ドメインを書くと、そのドメインで開かれたときだけに絞られる
+- Cloudflare Pagesは Root directory に入ってから、部品を入れる → Build command → Build output directory を公開、の順に作業する。Build output directory は Root directory から見た場所
+- Framework preset の「Next.js (Static HTML Export)」はビルドの命令を `npx next build` にするので、`npm run build` にあるPagefindが動かなくなる
+- Statusの番号: 200（あったので渡す）、304（前に渡したものから変わっていないので手元の写しを使って）、308（その住所はこちらに移った。転居届）、404（ない）
+- 304は、ブラウザの写し（キャッシュ）による。確かめるときは「Network」のタブの **Disable cache** に印を付ける
+- Pagefindが数えるのは `data-pagefind-body` の付いたページだけ（記事ページの1か所）
+
+### つまずいた点
+
+- `_headers` の1行目に `https://tokyotaximap.com/*` と書いた。エラーにならずに、試験版（`pages.dev`）には効かず、本番の公開のあとに本番のサイトにだけnoindexが付くところだった。`/*` に直した。2行目の字下げも、Cloudflareの説明書の例に合わせて空白2つにした
+- 予想B（`out/_headers` の中身は違う）が外れた。ビルドは `_headers` を写すだけ
+- 予想C（`localhost:1414` でもnoindexが付く）が外れた。ヘッダーを付けるのはビルドではなく配るサーバー
+- 予想G で、ある記事もない記事も304と読んだ。ブラウザの写しによるもの。**Disable cache** で見直すと200と404だった
+- 予想H（`/` が付かないまま）が外れた。Cloudflareが308で `/tomigaya/` に移す
+
+### 確認結果
+
+| 確かめたこと | 予想 | 結果 |
+|---|---|---|
+| A: ビルド後の `_headers` の場所 | `poc/out/_headers` | 当たり |
+| B: `out/_headers` の中身 | 違う | 外れ（同じ） |
+| C: `localhost:1414` のnoindex | 付いている | 外れ（付いていない） |
+| D: ビルドのNode.js | 22.23.4 | 当たり |
+| E: `Indexed ○ pages` | 5 | 当たり |
+| F: 試験版のトップページのnoindex | 付いている | 当たり |
+| G: `/tomigaya/` と `/no-such-page/` | 200と404 | **Disable cache** で200と404。`/no-such-page/` は「404 This page could not be found.」の画面（SPA扱いになっていない） |
+| H: `/tomigaya` を開いたあとのURL | `/` が付かない | 外れ（`/tomigaya/` に移る） |
+| I: `/search/?q=富ヶ谷` | 1本（富ヶ谷(交差点)）、`pagefind.js` は200 | 当たり |
+| J: `/search/?q=ラーメン` | 0本 | 当たり |
+| K: ピンマップのピン | 4本 | 当たり |
+
+- Agentも `curl` で試験版に直接聞いて確かめた（2026-11-12）: `/` 200、`/tomigaya/` 200、`/no-such-page/` 404、`/tomigaya` 308（`location: /tomigaya/`）。4つとも `x-robots-tag: noindex` が付いていた
+- このログを書いた時点で、`5b3e42b` までプッシュ済み。このログとdocsの3ファイル（infrastructure.md、architecture.md、0001-use-nextjs.md）の反映は未コミット
+
+### 次のステップ
+
+- ビルドを起こすフォルダを絞る（Build watch paths）。今は `docs/` や `logs/` だけを変えたプッシュでもビルドが動く
+- 本実装: ピンマップのレイアウト（ファーストビュー、PC・タブレット・スマートフォン）など。試験版のURLができたので、スマートフォンの実機でも見られる
+- 記事の移行の準備: 試験版の30本ほどに向けて、既存WordPressのslugの確認、画像の縮め方を決める
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---
+
