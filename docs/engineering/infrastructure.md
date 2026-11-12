@@ -42,6 +42,8 @@
 | Include paths | `poc/*` |
 | Exclude paths | （空） |
 
+- 設定の画面（Settings → Build → Build watch paths の鉛筆のボタン）では、欄に打ったあとに**Enter**で値を確定させる。確定させないと **Save** が押せない。保存できると、Settingsの一覧のこの行に「Include paths: `poc/*`」と出る。何も設定していないときは、この行は空白で表示される
+
 - 道筋は、gitが記録する「変わったファイルの道筋」と比べられる。リポジトリのいちばん上のフォルダの**中**から書く（`poc/public/_headers` のように）。フォルダの名前 `tokyotaximap-docs/` や先頭の `/` を付けると、どのファイルにも当たらず、エラーにならずにビルドが一度も動かなくなる
 - Root directoryから見た場所で書くBuild output directory（`out`）とは、起点が違う
 - `*` は `/` もまたいで当たる。`poc/*` は `poc/app/search/SuggestBox.tsx` にも当たる
