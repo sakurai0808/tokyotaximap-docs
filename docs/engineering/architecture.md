@@ -29,7 +29,7 @@ Markdown記事にYAML front matterを付与する。キー定義・編集ルー�
 ### URLルーティング
 
 - 形式: `/{slug}/`（パスprefixなし）
-- `slug` は既存WordPressサイトの英字スラッグを引き継ぐ
+- `slug` は既存WordPressサイトの英字スラッグを引き継ぐ。2026-11-13にWordPressのREST API（`/wp-json/wp/v2/posts`）で公開中の記事310本のslugを調べたところ、16本に `_` が入っていた（`hitotsubashi_exit`、`yasukuni-street_chiyodaku_chuoku` など）。URLを変えずに引き継ぐため、slugに `_` を使えるようにした。使えない名前（`area`・`search`・`pagefind`・`404`）と重なる記事はなかった
 - 区から探すのページは `/area/{英字}/`（例: `/area/chiyoda/`）。詳しくは [区から探す](#区から探す)
 - 記事と同じ階層にあるページ・フォルダの名前（`area`・`search`・`pagefind`・`404`）は、記事の `slug` に使えない（ビルド時に検証）
 
@@ -47,7 +47,8 @@ PoCでは **Zod** で実装した（`poc/lib/schema.ts`）。
 - `youtube` は動画IDだけを書き、`z.string().regex(/^[A-Za-z0-9_-]{11}$/, "…").optional()` で形を確かめる。URLを書くとビルドが止まる。`^`・`$` がないと、URLの中の11文字に当たって通ってしまう
 - front matterの `slug` とファイル名（`{slug}.md`）が一致しなければビルドを止める。URLはファイル名から作るので、一致を確かめないとfront matterの `slug` の間違いに気づけない。エラーにはファイル名とfront matterの値を表示する。Zodの検証の後に確かめる（検証前の値は型が `any` のため）
 - `slug` が `area`・`search`・`pagefind`・`404` のどれかならビルドを止める（`poc/lib/articles.ts` の `reservedSlugs`）。記事とほかのページが同じURLを作ろうとしても、ビルドはエラーにならず、片方だけが書き出される（`slug: search` の実験では検索ページが残り、記事はURLでも検索でも見つからなくなった）。一覧は `as const` を付けない `string[]` にする（付けると `reservedSlugs.includes(slug)` に `string` を渡せず、TypeScriptのエラーになる）
-- `slug` に使えるのは英小文字・数字・ハイフンだけで、1文字以上（`z.string().regex(/^[a-z0-9-]+$/, "…")`）。大文字・アンダースコア・空のslugはZodの検証でビルドを止める。`_next`・`_not-found` もこれで防げる。`+`（1回以上）を `*`（0回以上）にすると、空のslugがZodを通ってしまう（そのときはファイル名との一致の確認で止まる）。ハイフンの位置（`-abc`・`a--b`・`abc-`）はまだ縛っていない
+- `slug` に使えるのは英小文字・数字・アンダースコア・ハイフンだけで、1文字以上（`z.string().regex(/^[a-z0-9_-]+$/, "…")`）。大文字・空のslugはZodの検証でビルドを止める。`[ ]` の中の `-` は2つの文字の間では「〜から〜まで」になるので、文字そのものの `-` はいちばん最後に置く。`+`（1回以上）を `*`（0回以上）にすると、空のslugがZodを通ってしまう（そのときはファイル名との一致の確認で止まる）。ハイフンの位置（`-abc`・`a--b`・`abc-`）はまだ縛っていない
+- **未対策**: `_` を使えるようにしたので、`_next`・`_not-found`・`_headers` のような `_` で始まるslugがZodを通るようになった（前は `_` が使えないことで防げていた）。`out/` のいちばん上には `_next/`（JavaScriptなどの部品）・`_not-found/`・`_headers`（Cloudflare Pagesの設定）があり、ぶつかるおそれがある。既存の310本のslugはどれも英小文字で始まる。対策（先頭の文字を英小文字・数字に縛るなど）は次に決める
 - 確かめる順番は、Zodの検証 → ファイル名との一致 → 使えない `slug`。`throw` でそこで止まるので、エラーは最初に引っかかった1つだけが出る
 
 ### 全文検索・サジェスト
@@ -302,6 +303,7 @@ PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zod�
 ## 未決定事項
 
 - `tags` のenumリスト
+- `_` で始まるslug（`_next`・`_not-found`・`_headers` など）を止める方法（[スキーマ検証](#スキーマ検証)）
 - `poc/` から本実装への移り方・監視（ビルドの設定は決定。[インフラ設計](infrastructure.md#ビルドの設定)）
 - ミニ単語帳のデータ形式とPagefindへの載せ方（最初の公開後）
 - 地図埋め込みの方式
