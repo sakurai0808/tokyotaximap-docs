@@ -3858,3 +3858,66 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 
 ---
 
+## 日時:2026-11-13 05:37 JST
+
+```
+（11-13 05:13）次は ビルドを起こすフォルダを絞る（小さな作業 にいきましょう!
+（05:15）んああぷっしゅしちゃった!（Build watch pathsを設定する前に eea9b60 をプッシュ）
+（05:25）① /tokyotaximap-docs/poc/* ② /tokyotaximap-docs/docs/* /tokyotaximap-docs/logs/* /tokyotaximap-docs/README.md/
+（05:31）① poc/* ② （空） こうか
+（05:35）L 一覧は変わらない／M 動く／N 動く docs/engineering/architecture.md が除外されたうえで、includeされる設定の poc/app/page.tsx があることによってビルドされるから
+```
+
+## 回答
+
+**2026-11-13 05:37 JST**
+
+---
+
+### 決定
+
+- Cloudflare PagesのBuild watch pathsを、Include paths `poc/*`、Exclude paths 空にする。`poc/` の中が変わったプッシュのときだけビルドし、`docs/` や `logs/` だけの変更ではビルドしない
+- 確かめるためだけのコミットは作らない。docsだけのプッシュ（このログの反映）で予想L、次に `poc/` を変えるプッシュで予想Mを確かめる
+
+### 実装
+
+- Cloudflareの `tokyotaximap-docs` のプロジェクトで、Settings → Build → Build watch paths に値を入れて保存した（自分で設定）
+- docs/engineering/infrastructure.md に「ビルドを起こすフォルダ（Build watch paths）」の節を足し、未決定事項から「ビルドを起こすフォルダの絞り込み」を消した。「`poc/` から本実装への移り方」に、Build watch pathsも変わることを足した
+
+### 学んだこと
+
+- Build watch pathsは、gitが記録する「変わったファイルの道筋」（`git show --stat` で見える `poc/public/_headers` など）と比べられる。リポジトリのいちばん上のフォルダの**中**から書き、フォルダの名前や先頭の `/` は付けない
+- Build output directory（`out`）はRoot directoryから見た場所、Build watch pathsはリポジトリのいちばん上から見た場所で、起点が違う
+- `*` は `/` もまたいで当たる。`poc/*` は `poc/` の中の深いファイルにも当たる
+- Cloudflareの調べる順番: 変わったファイル1つずつについて、Exclude pathsに当たれば数えない → 残りのうち1つでもInclude pathsに当たればビルドする → 1つも当たらなければビルドしない
+- Exclude pathsに並べる方式は、新しいフォルダを足すたびに書き足しが要る。仕様が「`poc/` の中だけ」なら、Include pathsだけで表すほうがそのまま書ける
+- 末尾の `/` はフォルダの意味。`README.md` はファイルなので付けない
+- Build watch pathsを設定する前のプッシュ（`eea9b60`）は、`poc/` が変わっていなくてもビルドが1回動く。中身は同じで、無料プランの月500回のうち1回を使うだけ
+
+### つまずいた点
+
+- Build watch pathsを設定する前に、docsのコミット（`eea9b60`）をプッシュした。困ることはなく、「絞る前の動き」の見本になった
+- 最初の答えで、道筋の先頭に `/tokyotaximap-docs/` を付けた。gitの記録の道筋は `poc/` から始まるので、①がどのファイルにも当たらず、`poc/` を変えてもビルドが一度も動かなくなるところだった（エラーにならずに間違った動き）。Agentの「リポジトリのいちばん上から書く」という言い方がわかりにくかった
+- 最初の答えで、②に `docs/*`・`logs/*`・`README.md/` を並べた。①を `poc/*` にすれば要らない
+- 予想Nの理由で「`docs/engineering/architecture.md` が除外されたうえで」と書いた。問題のファイルは `logs/engineering/architecture.md` で、②は空なので除外されるものはない。正しくは「`logs/…` は①に当たらないが、`poc/app/page.tsx` が①に当たるので、1つ当たればビルドする」。答え（動く）は合っている
+
+### 確認結果
+
+| 確かめること | 予想 | 結果 |
+|---|---|---|
+| L: docsだけのプッシュ（このログの反映） | Deploymentsの一覧は変わらない | このログをプッシュしたあとに確かめる |
+| M: `poc/` を変えたプッシュ | ビルドが動く | 次に `poc/` を変えてプッシュしたときに確かめる |
+| N: `poc/app/page.tsx` と `logs/…` の両方を変えたプッシュ | ビルドが動く | 考えるだけの問題。答えは合っている（理由は「つまずいた点」のとおり直した） |
+
+- このログを書いた時点で、`eea9b60` までプッシュ済み。このログとdocs/engineering/infrastructure.mdの反映は未コミット
+
+### 次のステップ
+
+- このログをコミット・プッシュして、予想Lを確かめる（Deploymentsの一覧が変わるか、ビルドを飛ばした印の付いた行が出るか）
+- 次に `poc/` を変えてプッシュしたときに、予想Mを確かめる
+- 本実装: ピンマップのレイアウト（ファーストビュー、PC・タブレット・スマートフォン）など
+- 記事の移行の準備: 既存WordPressのslugの確認、画像の縮め方を決める
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---
+

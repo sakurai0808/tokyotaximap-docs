@@ -18,7 +18,7 @@
 
 ### ビルドの設定
 
-2026-11-12にGitHubのリポジトリとつないで設定した。`main` へのプッシュで、Cloudflareがビルドして公開する。
+2026-11-12にGitHubのリポジトリとつないで設定した。`main` へのプッシュで、Cloudflareがビルドして公開する（`poc/` が変わったときだけ。[ビルドを起こすフォルダ](#ビルドを起こすフォルダbuild-watch-paths)）。
 
 | 項目 | 値 | 理由 |
 |---|---|---|
@@ -32,6 +32,23 @@
 
 - GitHubとの連携では、Cloudflareに渡す範囲を「Only select repositories」で `tokyotaximap-docs` だけにした
 - ビルドのログで `Indexed 5 pages` を確かめた（手元と同じ。`data-pagefind-body` は記事ページだけ）
+
+### ビルドを起こすフォルダ（Build watch paths）
+
+`poc/` の中が変わったプッシュのときだけビルドする（2026-11-13に設定）。`docs/` や `logs/` だけの変更ではビルドしない。
+
+| 欄 | 値 |
+|---|---|
+| Include paths | `poc/*` |
+| Exclude paths | （空） |
+
+- 道筋は、gitが記録する「変わったファイルの道筋」と比べられる。リポジトリのいちばん上のフォルダの**中**から書く（`poc/public/_headers` のように）。フォルダの名前 `tokyotaximap-docs/` や先頭の `/` を付けると、どのファイルにも当たらず、エラーにならずにビルドが一度も動かなくなる
+- Root directoryから見た場所で書くBuild output directory（`out`）とは、起点が違う
+- `*` は `/` もまたいで当たる。`poc/*` は `poc/app/search/SuggestBox.tsx` にも当たる
+- Cloudflareは、変わったファイル1つずつについて、Exclude pathsに当たれば数えない → 残りのうち1つでもInclude pathsに当たればビルドする → 1つも当たらなければビルドしない、の順に調べる。`poc/` と `logs/` の両方を変えたプッシュは、`poc/` のファイルが当たるのでビルドする
+- Exclude pathsに `docs/*` などを並べる方式は、新しいフォルダを足すたびに書き足しが要る。「`poc/` の中が変わったときだけ」はInclude pathsだけで表せる
+- 中身のないプッシュ（変わったファイルが0）と、3000ファイル以上・20コミット以上のプッシュは、この絞り込みを通さずにビルドする（Cloudflareの説明書、2026-04-21更新）
+- `poc/` から本実装のフォルダに移るときは、Root directoryと一緒にここも変える
 
 ### 404の画面
 
@@ -101,8 +118,7 @@ Cloudflareは同じことができるWorkers（静的アセット）を勧めて
 
 ## 未決定事項
 
-- `poc/` から本実装への移り方（ビルドの設定の Root directory も変わる）
-- ビルドを起こすフォルダの絞り込み（Build watch paths。今は `docs/` や `logs/` だけの変更でもビルドが動く）
+- `poc/` から本実装への移り方（ビルドの設定の Root directory と Build watch paths も変わる）
 - CDN・キャッシュ方針
 - 監視・ログ
 - バックアップ
