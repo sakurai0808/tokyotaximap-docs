@@ -1,5 +1,6 @@
 // 既存のWordPressのコンテンツを読み込み、任意の形に取り込む
 
+// WPの記事を全ページすべて取得する
 const wpContentList: {
   slug: string;
   featured_media: number;
@@ -12,5 +13,14 @@ for (let page = 1; page <= 4; page++) {
   const wpContentArray = await wpContent.json(); // 中身をJSONとして読む
   wpContentList.push(...wpContentArray);
 }
-console.log(wpContentList[0].featured_media);
-console.log(wpContentList[0].content.rendered.length);
+
+// 記事ごとに必要な要素を抜き出す
+const articleImages: { slug: string; ids: number[] }[] = []; // まずは箱をつくる
+for (const article of wpContentList) {
+  const html = article.content.rendered;
+  const matches = html.matchAll(/wp-image-(\d+)/g); // wp-image- のあとに続く数字の列を正規表現で探す
+  const ids = [...matches].map((m) => Number(m[1])); // 文字列を数字に変換して新しい配列をつくる。
+  articleImages.push({ slug: article.slug, ids });
+}
+console.log(articleImages.length);
+console.log(articleImages.find((a) => a.slug === "tomigaya"));
