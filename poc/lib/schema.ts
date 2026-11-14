@@ -48,8 +48,8 @@ const baseSchema = z.object({
   slug: z
     .string()
     .regex(
-      /^[a-z0-9_-]+$/,
-      "slugに使えるのは英小文字・数字・アンダースコア・ハイフンです",
+      /^[a-z0-9][a-z0-9_-]*$/,
+      "slugを確認してください。1文字目は英小文字か数字のみが使えます。2文字目以降は英小文字、数字、ハイフン、アンダースコアが使用できます。",
     ), // スラッグを縛る
   category: z.enum(categories),
   city: z.array(z.enum(cities)),
