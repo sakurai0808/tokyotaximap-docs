@@ -10,7 +10,7 @@ keywords:
   - キャピトルホテル東急
   - 赤坂東急ホテル
 tags: []
-thumbnail: /images/articles/the-capitol-hotel-tokyu.png
+thumbnail: /images/articles/the-capitol-hotel-tokyu.webp
 pinmap: true
 location:
   lat: 35.673898

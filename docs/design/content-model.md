@@ -14,7 +14,7 @@
 | -------------------------------- | -------------------------------------------------------------- |
 | 設計サンプル（本リポジトリ）     | `docs/design/samples/articles/{slug}.md`                       |
 | 実装リポジトリ（将来）           | `content/articles/{slug}.md`                                   |
-| サムネイル画像（実装リポジトリ） | `public/images/articles/{slug}.png` など（`thumbnail` と対応） |
+| サムネイル画像（実装リポジトリ） | `public/images/articles/{slug}.webp` など（`thumbnail` と対応。[画像](#画像)） |
 
 設計サンプル: [ザ・キャピトルホテル東急](./samples/articles/the-capitol-hotel-tokyu.md)
 
@@ -83,6 +83,27 @@
 
 - 進入方向の表現は **「右左折」** に統一する（`summary`・車寄せ・本文で揃える）
 - `summary` は重要ブロックの事実と矛盾させない
+
+## 1記事のつくりかた
+
+現行のWordPressサイトでの作り方（2026-11-14に聞き取り）。
+
+1. コンテンツにするテーマを決める
+2. Illustrator（iPad版、有料）で地図をトレースしながら、重要なポイントを描き足す
+3. PNGで保存する。編集用のファイルは残したまま、サイト用に新しく書き出す
+4. 記事を作成する
+
+編集用のファイルは削除しておらず、すべて残っているはず。現行の画像のうちJPEGのもの（97枚）は、イラストにはPNGが向いていると知る前に作ったものか、PNGにする設定を忘れて書き出したものが大半。
+
+## 画像
+
+記事の画像は、文字の入った地図のイラスト（色の数が少なく、細い線と小さい文字が多い）。読む人には高齢のドライバーが多いので、小さい文字が読めることをいちばん大事にする。
+
+- 形式は **WebPだけ**にする。予備のPNG・JPEGは置かない（[アプリケーション技術設計](../engineering/architecture.md#画像)）
+- 品質は **80**。横幅は縮めずに元のまま
+- 移行のときに、日本語のファイル名を英字の名前に変える（名前の付け方は移行のときに決める）
+- JPEGからWebPに変えても、JPEGで文字や線のふちに出たノイズは元に戻らない。移行のときに開いてみて、気になるものだけ、Illustratorの編集用のファイルからPNGで書き出し直してWebPにする
+- 新しく作る記事も、Illustratorから書き出したPNGをWebP（品質80）に変えて置く
 
 ## 検索・サジェスト
 
@@ -162,7 +183,7 @@ keywords:
   - キャピトルホテル東急
   - 赤坂東急ホテル
 tags: []
-thumbnail: /images/articles/the-capitol-hotel-tokyu.png
+thumbnail: /images/articles/the-capitol-hotel-tokyu.webp
 pinmap: true
 location:
   lat: 35.673898
