@@ -13,7 +13,7 @@ export default function Home() {
   const pinmapItems = getPinmapItems();
 
   return (
-    <main className="px-6 py-12">
+    <main className="px-6 py-4">
       <PinmapLoader items={pinmapItems} />
       {/* 「区から探す」 */}
       <h2>区から探す</h2>
