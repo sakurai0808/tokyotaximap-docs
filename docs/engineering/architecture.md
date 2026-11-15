@@ -206,9 +206,11 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 
 ポップアップ:
 
-- `title`、`summary`、Googleマップへのリンク、記事へのリンク
+- `title`、`summary`、記事へのリンク（主）、Googleマップへのリンク（副）。縦並び・余白・ピル型ボタン（2026-11-15）
+- **画像は出さない**。`thumbnail` はIllustratorの地図イラストであり、小さいポップアップでは邪魔になる。将来、施設だけ実写を載せる案はあるが未着手
 - Googleマップ: `https://www.google.com/maps/search/?api=1&query={lat},{lng}`。外部サイトなので `<a target="_blank" rel="noopener noreferrer">` で新しいタブ
 - 記事: `next/link` の `<Link href="/{slug}/">` で同じタブ。ルート相対パスにして、dev・Pagefindの確認用サーバー・本番のどこでも、同じサイトの記事へ移動できるようにする
+- LeafletのCSSがリンク色（`.leaflet-container a`）と文字サイズ（`.leaflet-popup-content` の13px）を上書きする。ボタン文字は `!text-white`、タイトル／概要は `text-base`（16px）で打ち消す
 
 ベースマップ:
 
@@ -229,11 +231,11 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 
 `L.divIcon` の自前のアイコンにする。Leaflet標準のピンは、バンドラーを通すと画像のパスが壊れる（PoCでも壊れた画像になった）。見た目のルールは [UI・UX設計](../design/ui-ux.md#ピンの表示) を参照。
 
-- `html` はJSXではなくHTMLの文字列（`class`、属性はスペース区切り）。形はTailwindのクラス、色は `style` で渡す。Tailwindはファイルにそのまま書かれたクラス名しか生成しないため、`bg-[${色}]` のようにクラス名を組み立てない
+- Font Awesome（`@fortawesome/react-fontawesome` 等）。`renderToStaticMarkup(<FontAwesomeIcon … />)` でHTML文字列にして `L.divIcon` の `html` に渡す（sample-mapと同じ。対応表の型は `IconDefinition`）
+- 形はTailwindのクラス、背景色は `style={{ backgroundColor }}`。Tailwindはファイルにそのまま書かれたクラス名しか生成しないため、`bg-[${色}]` のようにクラス名を組み立てない
 - `className` に独自の名前を付ける。付けないとLeaflet標準の白い四角い背景が出る
 - `iconSize: [24, 24]`、`iconAnchor: [12, 12]`（丸の中心を座標に合わせる。単位はピクセル）
-- 色とアイコンは対応表で持つ（`Category` は `schema.ts` の `categories` から作る）。全カテゴリが必須なので、カテゴリを増やして書き漏らすと型エラーで気づける。見た目は [UI・UX設計](../design/ui-ux.md#ピンの表示)（2026-11-15に1文字ラベルからアイコンへ変更）
-- PoC時点のコードはまだ1文字ラベル。本実装でFont Awesome等（sample-mapと同系統）に差し替える
+- 色とアイコンは対応表で持つ（`Category` は `schema.ts` の `categories` から作る）。全カテゴリが必須なので、カテゴリを増やして書き漏らすと型エラーで気づける。見た目は [UI・UX設計](../design/ui-ux.md#ピンの表示)
 
 カテゴリの絞り込み:
 
@@ -358,7 +360,7 @@ PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zod�
 
 本実装で次を行う（方針の正はdocs。Figmaは参考。大きなズレだけ照合し、細部のピクセル一致は追わない。[UI・UX設計のデザイン資料と実装](../design/ui-ux.md#デザイン資料と実装)）。
 
-- ピンマップのレイアウト（トップページのファーストビュー、PC・TB・SP）、ポップアップのリンクの見た目
+- ピンマップのレイアウト続き（PC・TB・SPの切り替え、絞り込みボタンのトーンなど）。ポップアップの余白・ボタン化とピンのFont Awesome化は2026-11-15に実施
 - ベースマップの切り替え（OpenStreetMap）
 - 区のページの見た目と、トップページでの入口の置き場所
 - 検索で関係の薄い記事まで当たることへの対策

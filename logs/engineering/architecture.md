@@ -4439,3 +4439,55 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 - 本番の公開のときに、`_headers` のnoindexを外す
 
 ---
+
+
+## 日時:2026-11-15 23:28 JST
+
+```
+（11-15 22:28〜）Font Awesome導入。主要駅 faTrainSubway・交差点 faTrafficLight。ピンと絞り込みをアイコン化（a92baca）。
+（22:54）ポップアップ見た目。ShiobaLove参考。thumbnailは地図イラストなのでポップアップでは使わない（将来の施設実写は別）。
+（〜23:28）余白・縦並び・ピルボタン。round-fullの綴りミス、Leafletのリンク色と13pxを !text-white / text-base で打ち消し（7584dd6）。docs/logs追記依頼。
+```
+
+## 回答
+
+**2026-11-15 23:28 JST**
+
+---
+
+### 決定
+
+- 主要駅 `faTrainSubway`、交差点 `faTrafficLight`（ほかはsample-mapどおり）
+- ポップアップに画像／`thumbnail` は出さない（地図イラストが邪魔。施設の実写は将来検討）
+- ポップアップ構成: タイトル → summary → 解説記事（主）→ GoogleMap（副）。ピル型ボタン
+
+### 実装
+
+- `poc`: Font Awesome3パッケージ、`Pinmap.tsx` のアイコンピン・絞り込み、ポップアップ整形（ユーザー。`a92baca` / `7584dd6`）
+- docs: ピン割当の確定、ポップアップ方針、architectureのピン／ポップアップ記述を実装済みに更新
+
+### 学んだこと
+
+- `IconDefinition` と `string` を取り違えるとtscが止まる。ボタンの `.label` 取り残しにも注意
+- `rounded-full` であって `round-full` ではない（無いクラスはエラーにならず効かない）
+- Leaflet: `.leaflet-container a` がリンク色、`.leaflet-popup-content` が13px。`!text-white` / `text-base` で打ち消す
+
+### つまずいた点
+
+- 通称／抜け道の `faRoad` / `faRoute` を一度入れ替えていた（docsに合わせて修正）
+- ポップアップボタンの角丸・白文字がLeaflet／綴りで効かないように見えた
+
+### 確認結果
+
+| 確かめたこと | 結果 |
+|---|---|
+| ピンと絞り込みがアイコン | OK |
+| ポップアップの余白・ボタン・16px | OK |
+
+### 次のステップ
+
+- ピンマップのレスポンシブや絞り込みのトーンなど、レイアウト続き
+- 本文Markdownへの画像の埋め込み、固定ページ6つ
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---
