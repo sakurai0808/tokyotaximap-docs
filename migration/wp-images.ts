@@ -26,8 +26,17 @@ for (const article of wpContentList) {
   }
   articleImages.push({ slug: article.slug, ids });
 }
-const mediaResponse = await fetch(
-  "https://tokyotaximap.com/wp-json/wp/v2/media/3213?_fields=id,source_url",
-);
-const media = await mediaResponse.json();
-console.log(media.source_url);
+
+// WPの画像の番号から、URLをもってくる辞書をつくる
+const mediaById: Record<number, string> = {};
+for (let page = 1; page <= 4; page++) {
+  const mediaResponse = await fetch(
+    `https://tokyotaximap.com/wp-json/wp/v2/media?per_page=100&page=${page}&_fields=id,source_url`,
+  );
+  const mediaArray: { id: number; source_url: string }[] =
+    await mediaResponse.json();
+  for (const item of mediaArray) {
+    mediaById[item.id] = item.source_url; // idは、WPの画像の番号
+  }
+}
+console.log(mediaById[3213]);
