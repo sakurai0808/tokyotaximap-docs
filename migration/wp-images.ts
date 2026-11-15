@@ -20,7 +20,14 @@ for (const article of wpContentList) {
   const html = article.content.rendered;
   const matches = html.matchAll(/wp-image-(\d+)/g); // wp-image- のあとに続く数字の列を正規表現で探す
   const ids = [...matches].map((m) => Number(m[1])); // 文字列を数字に変換して新しい配列をつくる。
+  // 代表画像が存在し、かつ配列にその番号が入って「いない」時(本文=代表となって「いない」とき)
+  if (article.featured_media && !ids.includes(article.featured_media)) {
+    ids.push(article.featured_media);
+  }
   articleImages.push({ slug: article.slug, ids });
 }
-console.log(articleImages.length);
-console.log(articleImages.find((a) => a.slug === "tomigaya"));
+const mediaResponse = await fetch(
+  "https://tokyotaximap.com/wp-json/wp/v2/media/3213?_fields=id,source_url",
+);
+const media = await mediaResponse.json();
+console.log(media.source_url);
