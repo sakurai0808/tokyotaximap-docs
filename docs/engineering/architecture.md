@@ -254,7 +254,7 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 
 front matterの `youtube` には動画IDだけを書く（URLは書かない）。動画は1記事に1本までで本数も限られるため、URLからIDを切り出す手間より、形がはっきりしていて検証しやすいことを優先した。URLはいくつもの形（`watch?v=…`、`youtu.be/…`、`shorts/…`、`&t=30s` など）があり、IDを取り出すコードの間違いがエラーにならない間違いになりやすい。
 
-記事ページ（PoC: `poc/app/[slug]/page.tsx`）では、`youtube` があるときだけ `<iframe>` を出す（`{article.youtube && (…)}`）。ない記事では何も出さず、空いた場所もできない。PoCでは日付と本文の間に置く（本実装では重要ブロックとの並びを決める。[UI・UX設計](../design/ui-ux.md#基本方針)）。
+記事ページ（PoC: `poc/app/[slug]/page.tsx`）では、`youtube` があるときだけ `<iframe>` を出す（`{article.youtube && (…)}`）。ない記事では何も出さず、空いた場所もできない。PoCでは日付 → `thumbnail` →（あれば）YouTube → 本文の順（本実装では重要ブロックとの並びを決める。[UI・UX設計](../design/ui-ux.md#基本方針)）。
 
 - `src`: `https://www.youtube-nocookie.com/embed/{ID}`（再生するまでYouTubeのCookieを置かない版）
 - `title`: `{記事のタイトル}の動画`（画面読み上げ用）
@@ -349,7 +349,7 @@ WebPだけにした理由（Google Analytics、2026-08-16〜11-13の90日、「�
 | WebPファイル | 348（`poc/public/images/articles/`） |
 | PoCの `thumbnail` | 5本とも `/images/articles/{slug}/1.webp` に合わせた |
 
-ローカルのdev（`http://localhost:3001`）で、PoCの5本の `1.webp` が `200` / `image/webp` で届くことを確かめた。記事ページのテンプレートはまだ `thumbnail` を画面に出していない（パスの用意まで）。
+ローカルのdev（`http://localhost:3001`）で、PoCの5本の `1.webp` が `200` / `image/webp` で届くことを確かめた。記事ページ（`poc/app/[slug]/page.tsx`）では、日付の下・YouTubeの上に `<img src={article.thumbnail} …>` で表示する（2026-11-15。`next/image` は使っていない。`public` 配下なのでパスはそのまま。本番ドメインを付けない）。
 
 ## 次のステップ
 
@@ -373,7 +373,6 @@ PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zod�
 - ピンマップの一覧表示（サイドバー）の形（本実装のデザインの段階で決める）
 - ベースマップの本番での最終決定（PoCは地理院タイル。OpenStreetMapとの切り替えを検討）
 - 検索で関係の薄い記事まで当たることへの対策（そのまま受け入れる、検索語そのものを含む記事を上に並べる、完全一致検索。[日本語の区切り方と一致のきまり](#日本語の区切り方と一致のきまり)）
-- 記事ページへの `thumbnail` の表示（パスとファイルは用意済み。[画像](#画像)）
 - 本文Markdownへの画像の埋め込み（対応表はある。記事本文の一括移行と一緒に進める）
 - 固定ページの扱い（[URLルーティング](#urlルーティング)）
 - 記事データのJSONの書き出し（将来）。静的エクスポートでも、Route Handler（`route.ts`）の `GET` はビルド時に静的なファイルになり、JSONを書き出せる（`node_modules/next/dist/docs/01-app/02-guides/static-exports.md` の233〜235行目）。どのキーを出すかは、使うアプリを作るときに決める（[機能要件](../requirements/features.md#データの再利用将来の構想)）

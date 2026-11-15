@@ -4238,3 +4238,56 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 - 本番の公開のときに、`_headers` のnoindexを外す
 
 ---
+
+
+## 日時:2026-11-15 17:54 JST
+
+```
+（11-15 夕方）記事ページへの thumbnail 表示。Askモードで仕様と文法だけ示し、ユーザーが [slug]/page.tsx に <img> を追加。src に本番ドメインを付けない点を直したあと、localhost で確認。コードはユーザーがコミット（b2bb5a1）。docs/logs 反映を依頼。
+```
+
+## 回答
+
+**2026-11-15 17:54 JST**
+
+---
+
+### 決定
+
+- PoCの記事ページでは、日付の下・YouTubeの上に `thumbnail` を `<img>` で出す
+- `src` は `article.thumbnail`（`/images/articles/{slug}/1.webp`）。同じサイトの `public` なのでドメインを付けない
+- この段階では `next/image` は使わない
+
+### 実装
+
+- `poc/app/[slug]/page.tsx`: `<img src={article.thumbnail} alt={article.title} className="mb-8 w-full" />` を追加（ユーザーがAskモードで書いた）
+- コミット: `b2bb5a1` `(Agent解説使用)update: 記事ページにthumbnailを表示する`
+
+### 学んだこと
+
+- `src={article.thumbnail}` は変数の中身。`src="..."` は固定文字
+- YouTubeは別サイトなのでフルURLが必要。サムネは同じサイトのパスでよい
+- `https://tokyotaximap.com/${article.thumbnail}` のようにドメインを付けると、エラーにならず本番側を見に行く（間違った動き）
+
+### つまずいた点
+
+- 最初の `src` に `https://tokyotaximap.com/` を付けた（本番ドメイン＋先頭 `/` でスラッシュ二重にもなりやすい）
+
+### 確認結果
+
+| 確かめたこと | 予想 | 結果 |
+|---|---|---|
+| `tokyostation-yaesu` | タイトル下・動画上に代表画像。URLは同一オリジンの `/images/articles/tokyostation-yaesu/1.webp` | OK |
+| `tomigaya`（YouTube無し） | サムネは出る。動画枠は出ない | OK |
+| わざと本番ドメイン付き `src` | ページはエラーにならない。画像住所は `tokyotaximap.com` 側 | OK（元に戻した） |
+
+- コードコミット `b2bb5a1` 済み。このログとdocs反映は直後にコミット予定
+
+### 次のステップ
+
+- 本文Markdownへの画像の埋め込み（記事本文の一括移行と一緒に）
+- 固定ページ6つの扱い
+- 本実装: ピンマップのレイアウトなど
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---
