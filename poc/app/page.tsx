@@ -14,7 +14,6 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="mb-6 text-2xl font-bold">東京都心タクマップ PoC</h1>
       <PinmapLoader items={pinmapItems} />
       {/* 「区から探す」 */}
       <h2>区から探す</h2>
