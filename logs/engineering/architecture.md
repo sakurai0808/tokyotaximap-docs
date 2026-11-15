@@ -4390,3 +4390,52 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 - 本番の公開のときに、`_headers` のnoindexを外す
 
 ---
+
+
+## 日時:2026-11-15 22:25 JST
+
+```
+（11-15 22:10〜）トップの一覧だけ狭く包む。記事一覧にh2「記事の一覧から探す」を追加（Figmaに無いが意味が違うため）。
+（22:18）ピンの「施」「抜」は分かりやすいが堅い。sample-mapのFontAwesomeの方が好き。遊び心も欲しい。どう思う？
+（22:25）まずは方針をdocsへ。sample-mapのFAを当面使ってよい。Illustratorの自前SVGは今じゃない。参考にShiobaLove（塩原温泉郷公式・ピンマップが閲覧しやすい）を追加。
+```
+
+## 回答
+
+**2026-11-15 22:25 JST**
+
+---
+
+### 決定
+
+- ピンは **色＋アイコン（形）**。1文字漢字ラベルはやめる（堅さ対策。色だけに頼らない方針は維持）
+- 絞り込みボタンは **色の丸＋同じアイコン＋カテゴリ名の文字**（凡例）
+- 当面の道具は sample-map と同じ Font Awesome。自前SVGは優先度低
+- sample-mapの割当を流用: 施設 `faHouse`、抜け道 `faRoute`、通称 `faRoad`、首都高 `faTruckFast`。主要駅・交差点は未割当（実装時にシルエットが被らないものを選ぶ）
+- 参考サイトに [ShiobaLove](https://www.siobara.or.jp/) を追加
+
+### 実装
+
+- docs: `ui-ux.md` ピンの表示・絞り込み・クラスタリング、`architecture.md` ピン説明、`references.md`（ShiobaLove・アクセシビリティの一文）
+- コードの差し替えはまだ（次のAsk実装）
+
+### 学んだこと
+
+- 「色以外の手がかり」は文字でなくても、はっきり違うシルエットで満たせる
+- sample-mapは `@fortawesome/react-fontawesome` ＋ `renderToStaticMarkup` で `L.divIcon` に載せている
+
+### つまずいた点
+
+- なし
+
+### 確認結果
+
+- （ドキュメント反映のみ）
+
+### 次のステップ
+
+- PoCのピン／絞り込みボタンをFont Awesomeに差し替える（主要駅・交差点のアイコン選定を含む）
+- 本文Markdownへの画像の埋め込み、固定ページ6つ
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---

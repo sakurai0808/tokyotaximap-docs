@@ -21,6 +21,8 @@
 - [安野たかひろ 選挙掲示板マップ](https://anno-poster-map.netlify.app/)（[GitHub](https://github.com/takahiroanno2024/poster-map)）
   - Leafletで、OpenStreetMap、Google Map、地理院タイル（淡色地図）を切り替えられるようにしている。
   - 開発方法に注意点がある。Googleのタイルを正式なAPIを通さずに直接読み込むのは規約上認められていない。OpenStreetMapの標準タイルは、利用方針でアクセスの多いサービスでの常用を控えるよう求められている。詳細は [アプリケーション技術設計](./engineering/architecture.md#ピンマップ) を参照。
+- [ShiobaLove｜源泉遺産 塩原温泉郷公式サイト](https://www.siobara.or.jp/)
+  - 塩原温泉郷の公式サイト。ピンマップを使っており、閲覧しやすい。地図UIの参考。
 
 ## 道路交通情報
 
@@ -39,4 +41,4 @@
 ## アクセシビリティ
 
 - [東京都カラーユニバーサルデザインガイドライン](https://www.fukushi.metro.tokyo.lg.jp/documents/d/fukushi/colorudguideline2)
-  - 色だけに頼らない配色の考え方。ピンの表示（[UI・UX設計](./design/ui-ux.md#ピンの表示)）で採用した方針の参考。
+  - 色だけに頼らない配色の考え方。ピンは色＋アイコン（形）で区別する（[UI・UX設計](./design/ui-ux.md#ピンの表示)）。

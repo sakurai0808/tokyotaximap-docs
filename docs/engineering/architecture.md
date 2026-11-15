@@ -232,7 +232,8 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 - `html` はJSXではなくHTMLの文字列（`class`、属性はスペース区切り）。形はTailwindのクラス、色は `style` で渡す。Tailwindはファイルにそのまま書かれたクラス名しか生成しないため、`bg-[${色}]` のようにクラス名を組み立てない
 - `className` に独自の名前を付ける。付けないとLeaflet標準の白い四角い背景が出る
 - `iconSize: [24, 24]`、`iconAnchor: [12, 12]`（丸の中心を座標に合わせる。単位はピクセル）
-- 色とラベルは `Record<Category, { color: string; label: string }>` の対応表で持つ（`Category` は `schema.ts` の `categories` から作る）。全カテゴリが必須なので、カテゴリを増やして書き漏らすと型エラーで気づける
+- 色とアイコンは対応表で持つ（`Category` は `schema.ts` の `categories` から作る）。全カテゴリが必須なので、カテゴリを増やして書き漏らすと型エラーで気づける。見た目は [UI・UX設計](../design/ui-ux.md#ピンの表示)（2026-11-15に1文字ラベルからアイコンへ変更）
+- PoC時点のコードはまだ1文字ラベル。本実装でFont Awesome等（sample-mapと同系統）に差し替える
 
 カテゴリの絞り込み:
 
@@ -240,13 +241,13 @@ OpenStreetMapの標準タイルは、react-leafletの `LayersControl` で切り�
 - 表示するピンは `selectedCategory === null ? items : items.filter((item) => item.category === selectedCategory)` で計算する（stateには持たない）
 - ボタンにするカテゴリは、掲載の目安の6カテゴリの配列（`pinCategories: Category[]`、部品の外に置く）を `map` して並べる。順番は [機能要件](../requirements/features.md#ピンマップ) と同じ
 - 選んでいるボタンは `aria-pressed` と `className`（太字・下線）を同じ条件で切り替える
-- 各ボタンにピンと同じ色の丸と1文字を付け、凡例を兼ねる。JSXでは色を `style={{ backgroundColor: … }}` で渡す
+- 各ボタンにピンと同じ色の丸とアイコン、およびカテゴリ名を付け、凡例を兼ねる。JSXでは色を `style={{ backgroundColor: … }}` で渡す
 
 クラスタリング:
 
 - `react-leaflet-cluster`（4.1.3。react-leaflet 5、React 19、leaflet 1.9に対応）の `MarkerClusterGroup` で、`visibleItems.map(...)` の `Marker` を囲む。絞り込んだ後のピンをまとめる
 - 4系はCSSを自動で読み込まないので、`react-leaflet-cluster/dist/assets/MarkerCluster.css` と `MarkerCluster.Default.css` を自分で読み込む
-- `disableClusteringAtZoom={16}`: 運行中に見る縮尺ではまとめず、色と文字のピンを見せる
+- `disableClusteringAtZoom={16}`: 運行中に見る縮尺ではまとめず、色とアイコンのピンを見せる
 - `chunkedLoading`: ピンが多くても固まらないよう、少しずつ読み込む
 - 静的エクスポートでも動作を確認済み
 
