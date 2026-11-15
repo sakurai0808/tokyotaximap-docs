@@ -93,11 +93,7 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
           </button>
         ))}
       </div>
-      <MapContainer
-        center={[35.6812, 139.7671]}
-        zoom={13}
-        className="h-[500px]"
-      >
+      <MapContainer center={[35.6812, 139.7671]} zoom={13} className="h-[70vh]">
         <TileLayer
           url="https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
           attribution='<a href="https://maps.gsi.go.jp/development/ichiran.html">地理院タイル</a>' // 地理院タイル(淡色地図)
