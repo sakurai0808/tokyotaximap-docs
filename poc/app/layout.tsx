@@ -32,9 +32,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header>
+        <header className="flex items-center justify-between px-16 py-6">
           <Link href="/">東京都心タクマップ</Link>
-          <Link href={`/search/`}>検索</Link>
+          <Link
+            href={`/search/`}
+            className="text-white bg-[#95c7ec] rounded-full px-4 py-2"
+          >
+            検索
+          </Link>
         </header>
         {children}
       </body>
