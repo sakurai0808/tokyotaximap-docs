@@ -43,6 +43,11 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* 改行時につぶれないように空白文字で */}
           {article.updatedAt}
         </p>
+        <img
+          src={article.thumbnail}
+          alt={article.title}
+          className="mb-8 w-full"
+        />
         {article.youtube && (
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${article.youtube}`}
