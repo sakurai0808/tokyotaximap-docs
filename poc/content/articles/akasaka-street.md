@@ -5,7 +5,8 @@ publishedAt: 2024-02-23
 updatedAt: 2024-09-23
 category: 幹線道路
 city: [千代田区, 港区]
-keywords: []
+keywords:
+  - あかさかどおり
 tags: []
 thumbnail: /images/articles/akasaka-street/1.webp
 pinmap: false

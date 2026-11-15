@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useEffect } from "react";
 import Link from "next/link";
 
-export default function SiteHeader() {
+import type { SuggestItem } from "@/lib/articles";
+import SuggestBox from "../search/SuggestBox";
+
+export default function SiteHeader({ items }: { items: SuggestItem[] }) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +39,7 @@ export default function SiteHeader() {
           className="fixed inset-0 bg-black/40"
         >
           <div onClick={(e) => e.stopPropagation()}>
-            <p>検索モーダル(準備中)</p>
+            <SuggestBox items={items} />
             <button type="button" onClick={() => setIsOpen(false)}>
               閉じる
             </button>
