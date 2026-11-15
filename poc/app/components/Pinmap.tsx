@@ -17,18 +17,35 @@ import Link from "next/link";
 import type { Category } from "@/lib/schema"; // カテゴリの型をインポート
 import { useState } from "react";
 
-const categoryStyles: Record<Category, { color: string; label: string }> = {
+// FontAwesome
+import { renderToStaticMarkup } from "react-dom/server";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+  faHouse,
+  faRoute,
+  faRoad,
+  faTruckFast,
+  faTrainSubway,
+  faTrafficLight,
+  faLocationDot,
+} from "@fortawesome/free-solid-svg-icons";
+
+const categoryStyles: Record<
+  Category,
+  { color: string; icon: IconDefinition }
+> = {
   // すべてのカテゴリをキーに持ち、値は色とラベルの組
-  幹線道路: { color: "#7F7F7F", label: "幹" },
-  交差点: { color: "#D55E00", label: "交" },
-  主要駅: { color: "#0072B2", label: "駅" },
-  施設: { color: "#E69F00", label: "施" },
-  通称がある道: { color: "#CC79A7", label: "通" },
-  "抜け道・定番ルート": { color: "#56B4E9", label: "抜" }, // 「・」を含んでいるため、""で囲まないとエラーになる可能性がある
-  首都高: { color: "#009E73", label: "首" },
-  タクシー基礎: { color: "#7F7F7F", label: "基" },
-  主要エリア解説: { color: "#7F7F7F", label: "エ" },
-  その他お役立ち知識: { color: "#7F7F7F", label: "他" },
+  幹線道路: { color: "#7F7F7F", icon: faLocationDot },
+  交差点: { color: "#D55E00", icon: faTrafficLight },
+  主要駅: { color: "#0072B2", icon: faTrainSubway },
+  施設: { color: "#E69F00", icon: faHouse },
+  通称がある道: { color: "#CC79A7", icon: faRoad },
+  "抜け道・定番ルート": { color: "#56B4E9", icon: faRoute }, // 「・」を含んでいるため、""で囲まないとエラーになる可能性がある
+  首都高: { color: "#009E73", icon: faTruckFast },
+  タクシー基礎: { color: "#7F7F7F", icon: faLocationDot },
+  主要エリア解説: { color: "#7F7F7F", icon: faLocationDot },
+  その他お役立ち知識: { color: "#7F7F7F", icon: faLocationDot },
 };
 
 const pinCategories: Category[] = [
@@ -43,10 +60,17 @@ const pinCategories: Category[] = [
 // ピンのアイコンをつくる関数
 function createPinIcon(category: Category) {
   const categoryColor = categoryStyles[category].color; // 2段で項目を取り出す
-  const categoryLabel = categoryStyles[category].label;
+  const categoryIcon = categoryStyles[category].icon;
 
   return L.divIcon({
-    html: `<div class="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-black" style="background-color: ${categoryColor}">${categoryLabel}</div>`,
+    html: renderToStaticMarkup(
+      <div
+        className="h-6 w-6 rounded-full border-2 border-white flex items-center justify-center text-white"
+        style={{ backgroundColor: categoryColor }}
+      >
+        <FontAwesomeIcon icon={categoryIcon} />
+      </div>,
+    ),
     className: "pinmap-icon", // 独自の名前(クラス)をつけないとLeaflet標準のデザインがついてしまう
     iconSize: [24, 24],
     iconAnchor: [12, 12],
@@ -85,9 +109,9 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
           >
             <span
               style={{ backgroundColor: categoryStyles[cat].color }}
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-black"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white"
             >
-              {categoryStyles[cat].label}
+              <FontAwesomeIcon icon={categoryStyles[cat].icon} />
             </span>
             {cat}
           </button>
