@@ -15,36 +15,39 @@ export default function Home() {
   return (
     <main className="px-6 py-4">
       <PinmapLoader items={pinmapItems} />
-      {/* 「区から探す」 */}
-      <h2>区から探す</h2>
-      <ul className="list-disc space-y-2 pl-6">
-        {cities.map((c) => (
-          <li key={cityPaths[c]}>
-            <Link
-              href={`/area/${cityPaths[c]}/`}
-              className="text-blue-600 underline"
-            >
-              {c}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {/* 記事一覧 */}
-      <ul className="list-disc space-y-2 pl-6">
-        {articles.map((article) => (
-          <li key={article.slug}>
-            <Link
-              href={`/${article.slug}/`}
-              className="text-blue-600 underline"
-            >
-              {article.title}
-            </Link>
-            <span className="ml-2 text-sm text-zinc-500">
-              {article.category} ・ 更新 {article.updatedAt}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="mx-auto max-w-3xl">
+        {/* 「区から探す」 */}
+        <h2>区から探す</h2>
+        <ul className="list-disc space-y-2 pl-6">
+          {cities.map((c) => (
+            <li key={cityPaths[c]}>
+              <Link
+                href={`/area/${cityPaths[c]}/`}
+                className="text-blue-600 underline"
+              >
+                {c}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {/* 記事一覧 */}
+        <h2>記事の一覧から探す</h2>
+        <ul className="list-disc space-y-2 pl-6">
+          {articles.map((article) => (
+            <li key={article.slug}>
+              <Link
+                href={`/${article.slug}/`}
+                className="text-blue-600 underline"
+              >
+                {article.title}
+              </Link>
+              <span className="ml-2 text-sm text-zinc-500">
+                {article.category} ・ 更新 {article.updatedAt}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }
