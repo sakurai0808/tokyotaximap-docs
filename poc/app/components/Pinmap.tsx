@@ -133,19 +133,25 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
               icon={createPinIcon(item.category)}
             >
               <Popup>
-                <strong>{item.title}</strong>
-                <p>{item.summary}</p>
-                <div>
+                <div className="flex flex-col gap-2 p-1">
+                  <strong className="text-base">{item.title}</strong>
+                  <p className="text-base">{item.summary}</p>
+                  {/* タクマップ記事リンクボタン */}
+                  <Link
+                    href={`/${item.slug}/`}
+                    className="bg-[#4285f4] !text-white font-bold rounded-full block w-full text-center py-3"
+                  >
+                    解説記事を見る
+                  </Link>
                   {/* GoogleMapのリンクボタン */}
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="bg-[#34a853] !text-white font-bold rounded-full block w-full text-center py-3"
                   >
                     GoogleMapで確認
                   </a>
-                  {/* タクマップ記事リンクボタン */}
-                  <Link href={`/${item.slug}/`}>解説記事を見る</Link>
                 </div>
               </Popup>
             </Marker>
