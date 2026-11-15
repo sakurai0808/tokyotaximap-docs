@@ -26,13 +26,14 @@ export default function SuggestBox({
         );
 
   return (
-    <div className="mb-8">
+    <div>
       <Form
         action="/search/"
         onSubmit={() => {
           setIsOpen(false);
           onAfterSubmit?.();
         }}
+        className="flex gap-2"
       >
         <input
           type="search"
@@ -43,28 +44,35 @@ export default function SuggestBox({
             setIsOpen(true);
           }}
           placeholder="施設名・通称・地名で検索"
-          className="w-full rounded border px-3 py-2"
+          className="min-w-0 flex-1 rounded border px-3 py-2 text-zinc-900 bg-white"
+          autoFocus
         />
-        <button type="submit">検索</button>
-        {isOpen && suggestions.length > 0 && (
-          <ul>
-            {suggestions.map((item) => (
-              <li key={item.slug}>
-                <button
-                  type="button"
-                  // サジェストが表示された時ではなく、「クリックしたときに」setQueryを呼ぶ
-                  onClick={() => {
-                    setQuery(item.title);
-                    setIsOpen(false);
-                  }}
-                >
-                  {item.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <button
+          type="submit"
+          className="shrink-0 rounded-full bg-zinc-800 px-4 py-2 font-bold text-white"
+        >
+          検索
+        </button>
       </Form>
+      {isOpen && suggestions.length > 0 && (
+        <ul className="mt-2 divide-y rounded border">
+          {suggestions.map((item) => (
+            <li key={item.slug}>
+              <button
+                type="button"
+                // サジェストが表示された時ではなく、「クリックしたときに」setQueryを呼ぶ
+                onClick={() => {
+                  setQuery(item.title);
+                  setIsOpen(false);
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-zinc-100"
+              >
+                {item.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

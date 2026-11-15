@@ -28,7 +28,7 @@ export default function SiteHeader({ items }: { items: SuggestItem[] }) {
   }, [isOpen]);
 
   return (
-    <header>
+    <header className="flex items-center justify-between px-6 py-3 border-b">
       <Link href="/">東京都心タクマップ</Link>
       <button type="button" onClick={() => setIsOpen(true)}>
         検索
@@ -36,13 +36,22 @@ export default function SiteHeader({ items }: { items: SuggestItem[] }) {
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/40"
+          className="fixed inset-0 z-[1100] bg-black/40 p-4 pt-16"
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="mx-auto max-w-3xl rounded-lg bg-white p-4 shadow-lg text-zinc-900"
+          >
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="px-2 py-1 text-sm text-zinc-600"
+              >
+                閉じる
+              </button>
+            </div>
             <SuggestBox items={items} onAfterSubmit={() => setIsOpen(false)} />
-            <button type="button" onClick={() => setIsOpen(false)}>
-              閉じる
-            </button>
           </div>
         </div>
       )}
