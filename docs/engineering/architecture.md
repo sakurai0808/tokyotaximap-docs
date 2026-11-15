@@ -127,9 +127,36 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 
 サジェストの候補はPagefindではなく、記事データから探す。Pagefindは本文も検索するため、`title` と `keywords` だけでマッチさせる要件より広く拾ってしまう。
 
-- サーバーコンポーネントで全記事の `slug`・`title`・`keywords` を集め、propsでクライアントコンポーネントに渡す（PoC: `poc/app/search/SuggestBox.tsx`）
+- サーバーコンポーネントで全記事の `slug`・`title`・`keywords` を集め、propsでクライアントコンポーネントに渡す（PoC: `poc/app/layout.tsx` が `getSuggestItems()` を集め、固定ヘッダーのモーダルと `/search/` の両方で `SuggestBox` に渡す）
 - 前後の空白を取り除いた入力で、`title` と `keywords` を部分一致で絞り込む。入力が空なら候補を出さない
 - 候補をタップすると入力欄に `title` を入れ、候補を閉じる。再び入力すると開く
+
+#### 共通ヘッダー・検索モーダル
+
+[UI・UX設計の検索UI](../design/ui-ux.md#検索ui)どおり、固定ヘッダーの検索ボタンから共通モーダルを開く（インライン入力は使わない）。PoCで実装済み（2026-11-16）。
+
+構成（PoC）:
+
+- `poc/app/layout.tsx`（サーバー）: `getSuggestItems()` を呼び、`<SiteHeader items={items} />` に渡す
+- `poc/app/components/SiteHeader.tsx`（`"use client"`）: 開閉の `useState`。検索ボタンで開き、閉じる＝閉じるボタン／背景クリック／Esc／検索送信後
+- `poc/app/search/SuggestBox.tsx`: モーダル内でも `/search/` でも同じ部品。任意の `onAfterSubmit?: () => void` を受け、送信時に親のモーダルを閉じられる
+
+閉じ方（決定）:
+
+- 閉じるボタン
+- 背景（暗い幕）のクリック。内側の白パネルは `stopPropagation` で閉じない
+- Esc（`useEffect` で `keydown` を聴き、開いているときだけ。片付けで `removeEventListener`）
+- 検索送信後（`onAfterSubmit`）。`/search/` ページ単体では渡さないので、従来どおり候補だけ閉じる
+
+見た目・重ね順（PoC）:
+
+- 幕: `fixed inset-0 z-[1100] bg-black/40`。Leafletのコントロールはだいたい z-index 〜1000のため、`z-50` だと地図の下に隠れる
+- 白パネル: `max-w-3xl`（記事ページと同じ幅感）＋ `text-zinc-900`。OSがダークのとき `globals.css` の `--foreground: #ededed` が白背景に乗ると文字が薄くなるため、パネル側で濃い文字色を固定する
+- 入力と検索ボタンは横並び（`flex`）。モーダルを開いたら入力に `autoFocus`
+
+サジェストと本検索は別パイプラインであることに注意する。サジェストは記事データの `title`＋`keywords` なので `npm run dev` でも動く。本検索（`SearchResults`）はビルド後の `/pagefind/pagefind.js` が必要なため、devではConsoleに「読み込めなかった」と出て0件になりやすい（想定どおり）。本検索の確認は `npm run build` → `npx pagefind --site out --serve` → `http://localhost:1414/`。
+
+ハンバーガーメニューは未実装。
 
 #### 検索結果の一覧
 
@@ -137,12 +164,12 @@ Pagefindは索引生成と日本語分割を担当する。要件固有のサジ
 
 検索語はURLに載せる（`/search/?q=赤坂`）。
 
-- 固定ヘッダーの検索ボックスからも「`/search/?q=...` へ移動する」形で使い回せる。要件の「検索ボタンのあとに記事一覧ページを必ず挟む」にもそのまま合う
+- 固定ヘッダーの検索モーダルからも「`/search/?q=...` へ移動する」形で使い回せる。要件の「検索ボタンのあとに記事一覧ページを必ず挟む」にもそのまま合う
 - 記事を開いてからブラウザで戻ると、同じ結果一覧に戻れる
 
 構成（PoC）:
 
-- `poc/app/search/SuggestBox.tsx`: 入力欄を `next/form` の `<Form action="/search/">` で囲み、入力欄に `name="q"` を付ける。検索ボタンかEnterで、ページを読み直さずに `?q=` 付きのURLへ移動する
+- `poc/app/search/SuggestBox.tsx`: 入力欄を `next/form` の `<Form action="/search/">` で囲み、入力欄に `name="q"` を付ける。検索ボタンかEnterで、ページを読み直さずに `?q=` 付きのURLへ移動する。任意の `onAfterSubmit` で親（検索モーダル）を閉じられる
 - `poc/app/search/SearchResults.tsx`（クライアントコンポーネント）: `useSearchParams` で `q` を読み、`q` が変わるたびにPagefindで検索して、タイトル（記事へのリンク）と抜粋を一覧表示する
 - `poc/app/search/page.tsx`: `SearchResults` を `<Suspense>` で囲む。静的エクスポートではビルド時に `?q=` が決まらないため、サーバーコンポーネントの `searchParams` は使えない。囲まないと本番ビルドが止まる
 
@@ -356,11 +383,11 @@ WebPだけにした理由（Google Analytics、2026-08-16〜11-13の90日、「�
 
 ## 次のステップ
 
-PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` の形、`slug` とファイル名の一致、使えない `slug` を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）、記事ページへのYouTubeの埋め込み、区から探す（`/area/{英字}/` の一覧ページとトップページの入口）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`。主要駅の `tokyostation-yaesu` に `youtube` あり）。最後に残っていたPagefindの日本語の区切り方と一致のきまりも調べ（[日本語の区切り方と一致のきまり](#日本語の区切り方と一致のきまり)）、技術検証を締めくくった。
+PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` の形、`slug` とファイル名の一致、使えない `slug` を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）、記事ページへのYouTubeの埋め込み、区から探す（`/area/{英字}/` の一覧ページとトップページの入口）、共通ヘッダーの検索モーダル（閉じ方・`SuggestBox` 載せ・z-index・ダーク時の文字色）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`。主要駅の `tokyostation-yaesu` に `youtube` あり）。最後に残っていたPagefindの日本語の区切り方と一致のきまりも調べ（[日本語の区切り方と一致のきまり](#日本語の区切り方と一致のきまり)）、技術検証を締めくくった。
 
 本実装で次を行う（方針の正はdocs。Figmaは参考。大きなズレだけ照合し、細部のピクセル一致は追わない。[UI・UX設計のデザイン資料と実装](../design/ui-ux.md#デザイン資料と実装)）。
 
-- ピンマップのレイアウト続き（PC・TB・SPの切り替え、絞り込みボタンのトーンなど）。ポップアップの余白・ボタン化とピンのFont Awesome化は2026-11-15に実施
+- ピンマップのレイアウト続き（PC・TB・SPの切り替え、絞り込みボタンのトーンなど）。ポップアップの余白・ボタン化とピンのFont Awesome化は2026-11-15に実施。検索モーダルは2026-11-16に実施（ハンバーガーメニューは未実装）
 - ベースマップの切り替え（OpenStreetMap）
 - 区のページの見た目と、トップページでの入口の置き場所
 - 検索で関係の薄い記事まで当たることへの対策

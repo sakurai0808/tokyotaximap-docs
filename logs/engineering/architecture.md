@@ -4491,3 +4491,70 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 - 本番の公開のときに、`_headers` のnoindexを外す
 
 ---
+
+
+## 日時:2026-11-16 07:40 JST
+
+```
+（11-16 05:53〜）検索モーダルへ。Figma未決でもdocsが正。閉じ方は閉じるボタン＋背景クリック＋Escで確定。
+（〜06:38）SiteHeader作成。useStateは関数の中・returnの親は1つ・onClick。背景の二重箱とstopPropagation。EscはuseEffect＋addEventListener（0820c1c / 8995938）。
+（〜06:52）layoutでgetSuggestItems → SiteHeader → SuggestBox。確認用keywordsを記事に追加（b696b0e）。
+（〜07:06）onAfterSubmitで送信後にモーダルを閉じる（8371efc）。devで本検索0件→サジェストとPagefindは別パイプラインと再確認。
+（〜07:32）見た目。z-50ではLeaflet（〜1000）の下→z-[1100]。OSダークで白パネル上の文字が薄い→text-zinc-900。justify-end / rounded のtypo修正（1dc67aa）。
+（07:35）このチャットで logs と docs への追記を依頼。
+```
+
+## 回答
+
+**2026-11-16 07:40 JST**
+
+---
+
+### 決定
+
+- 検索モーダルの閉じ方: 閉じるボタン／背景クリック／Esc／検索送信後（候補タップでは閉じない）
+- 固定ヘッダーから共通モーダル。インライン入力はしない（[ui-ux.md](../../docs/design/ui-ux.md)どおり）
+- モーダルの重ね順は Leaflet より上（PoC: `z-[1100]`）
+- 白パネルでは文字色を `text-zinc-900` で固定（OSダーク時の `--foreground` 対策）
+
+### 実装
+
+- コード（ユーザー）: `SiteHeader.tsx`、`layout.tsx` の props 渡し、`SuggestBox` の `onAfterSubmit` とスタイル（`0820c1c` → `8995938` → `b696b0e` → `8371efc` → `1dc67aa`）
+- docs: `architecture.md` に「共通ヘッダー・検索モーダル」を追加。サジェスト／検索結果の構成と「次のステップ」を更新。`ui-ux.md` に閉じ方を追記し、実装メモへリンク
+
+### 学んだこと
+
+- `useState` は部品の関数の中。`return` のいちばん外側の親は1つ
+- 背景クリックは外側で閉じ、内側は `stopPropagation`
+- Escは `useEffect` で開いているときだけ `keydown` を聴き、片付けで外す
+- クライアント部品はサーバーで集めたデータを props で受け取る（`getSuggestItems` を `SiteHeader` 内で直接呼ばない）
+- サジェスト（記事データ）と本検索（Pagefind索引）は別。devでは本検索が動かないのが正常
+- Leafletの z-index（コントロール〜1000）より低いと、`fixed` でも地図の下に隠れる
+
+### つまずいた点
+
+- 最初に `useState` を関数の外に置き、`return` に親が2つ並んで型エラー
+- `z-50` では地図の上に出ない
+- OSダーク＋白パネルで文字が薄い（`globals.css` の `--foreground: #ededed`）
+- `jusify-end` / `roudned-full` など、無いクラスはエラーにならず効かない
+
+### 確認結果
+
+| 確かめたこと | 結果 |
+|---|---|
+| 検索ボタンでモーダル開閉（閉じる／背景／Esc／送信後） | OK |
+| モーダル内のサジェスト（dev） | OK |
+| 地図の上にモーダル（`z-[1100]`） | OK |
+| 白パネル上の文字が読める（ダークOS） | OK |
+| 本検索は build + pagefind --serve（:1414）で確認する旨 | 共有済み（devの0件は想定どおり） |
+
+### 次のステップ
+
+- ピンマップのレイアウト続き（PC・TB・SP、絞り込みのトーン）
+- ベースマップの切り替え（OpenStreetMap）
+- 区のページの見た目と、トップでの入口の置き場所
+- ハンバーガーメニュー（ヘッダーの残り）
+- 本文Markdownへの画像の埋め込み、固定ページ6つ
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---
