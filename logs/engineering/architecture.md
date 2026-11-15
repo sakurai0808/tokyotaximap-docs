@@ -4176,3 +4176,65 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 
 ---
 
+
+## 日時:2026-11-15 17:20 JST
+
+```
+（11-15 昼〜夕方）画像の移行: WordPress RESTから対応表を作り、cwebpでWebPにして poc/public に置く。PoC5本のthumbnailを /images/articles/{slug}/1.webp に合わせる。ローカルで画像URLを目視。docsへ決定を反映。
+```
+
+## 回答
+
+**2026-11-15 17:20 JST**
+
+---
+
+### 決定
+
+- 画像の変換の道具は **Node.jsのスクリプト＋`cwebp`（品質80）**。`sharp` は使わない
+- 英字のファイル名は **`images/articles/{slug}/{n}.webp`**（記事ごとのフォルダ、番号は1始まり）
+- 記事の本文の中の画像の拾い方: 本文HTMLの `wp-image-{id}`。本文に無い代表画像は `featured_media` を足す。メディアAPIの `id` → `source_url` でURLを引く
+- 対応表は `migration/image-map.json`。作成は `migration/wp-images.ts`、ダウンロードと変換は `migration/download-images.ts`
+
+### 実装
+
+- `migration/wp-images.ts`: 投稿・メディアをページごとに取得し、対応表をJSONに書き出す（ユーザーがAskモードで書いて動かした）
+- `migration/download-images.ts`: 対応表を読み、`fetch`で落として `cwebp -q 80` で `poc/public/` 以下へ書く（同上）
+- 実行結果: 対応表348行、記事フォルダ307、WebP348枚
+- PoCの5本（`tomigaya` ほか）の `thumbnail` を `/images/articles/{slug}/1.webp` に変更
+- docs: `content-model.md`（置き場所・名前）、設計サンプルの `thumbnail`、`architecture.md`（道具・結果・未決定の更新）
+
+### 学んだこと
+
+- `mkdir -p` / `fs.mkdirSync(..., { recursive: true })` は、親が無くても作り、すでに有ってもエラーにしない
+- `curl -o` のあとに `cwebp`。一時ファイルは同じ名前を順に上書きしてよい（1件ずつ処理するなら）
+- `JSON.stringify` の逆は `JSON.parse`。`readFileSync(..., "utf8")` で文字として読む
+- `path.join("poc/public", destPath)` で、対応表の相対パスをPoCの公開フォルダにつなぐ
+- `execFileSync("cwebp", ["-q", "80", tmp, "-o", outPath])` は、シェルを通さず外部コマンドを呼ぶ
+- Next.jsのdevは、3000が埋まっていると次の空き（今回は3001）で起動する
+
+### つまずいた点
+
+- `curl` のURLに、説明文の「ここにsourceUrl」をそのまま書いて、ホスト名解決に失敗した
+- Agentがdevを起動したとき、先の試行で3000が使われており3001になった（いま3000は空、3001だけがListen）
+
+### 確認結果
+
+| 確かめたこと | 予想 | 結果 |
+|---|---|---|
+| 対応表の件数 | 310より多い（画像＞記事） | 348 |
+| 記事フォルダ数 | 310前後 | 307 |
+| PoC5本の `1.webp`（localhost:3001） | 200 / image/webp | 5本とも200 / image/webp。tomigayaは842×596で表示できた |
+| 記事ページにサムネが出るか | — | まだ出ない（`[slug]/page.tsx` が `thumbnail` を描画していない） |
+
+- 直前のコミットは `f3c564d`（サムネイルのパス合わせ）。このログとdocs3ファイルの反映は未コミットの想定
+
+### 次のステップ
+
+- 記事ページへの `thumbnail` の表示
+- 本文Markdownへの画像の埋め込み（記事本文の一括移行と一緒に）
+- 固定ページ6つの扱い
+- 本実装: ピンマップのレイアウトなど
+- 本番の公開のときに、`_headers` のnoindexを外す
+
+---

@@ -21,7 +21,7 @@ Markdown記事にYAML front matterを付与する。キー定義・編集ルー�
 
 - 設計サンプル（本リポジトリ）: `docs/design/samples/articles/{slug}.md`
 - 実装リポジトリ（将来）: `content/articles/{slug}.md`
-- サムネイル: `public/images/articles/`（`thumbnail` と対応）
+- サムネイル・記事画像: `public/images/articles/{slug}/{n}.webp`（`thumbnail` と対応。[画像](#画像)）
 - カテゴリ別フォルダは使わない（URLは `/{slug}/`。カテゴリはfront matter）
 
 設計サンプル: [ザ・キャピトルホテル東急](../design/samples/articles/the-capitol-hotel-tokyu.md)
@@ -307,6 +307,9 @@ devとビルドの違い:
 
 - 形式は **WebPだけ**、品質は **80**、横幅は元のまま（編集の方針は [コンテンツモデル・編集方針](../design/content-model.md#画像)）
 - 検索の評価につながるのは、形式そのものではなく、ページの表示の速さ（いちばん大きな画像や文字が出るまでの時間、LCP）を通して。PageSpeed Insightsも、WebPのような次世代フォーマットを勧めている
+- 置き場所は `public/images/articles/{slug}/{n}.webp`（記事ごとのフォルダ、番号は1始まり）
+- 変換の道具は **Node.jsのスクリプト＋`cwebp`（Homebrew）**。対応表の作成は `migration/wp-images.ts`、ダウンロードと変換は `migration/download-images.ts`。対応表は `migration/image-map.json`
+- 記事との結び付きは、本文HTMLの `wp-image-{id}` と、本文に無いときの `featured_media` から拾う。メディア一覧のURLを `id` で引いて、英字の `destPath` に落とす
 
 現行のWordPressのメディアライブラリ（2026-11-14にREST API `/wp-json/wp/v2/media` で確認）:
 
@@ -337,6 +340,17 @@ WebPだけにした理由（Google Analytics、2026-08-16〜11-13の90日、「�
 - Androidの4.x以前は50位までに出てこなかった
 - 予備のPNG・JPEGを置くと、守れる人がほぼいないのに、ファイルが2倍になり、HTMLも複雑になる
 
+移行の実行結果（2026-11-15）:
+
+| 項目 | 結果 |
+|---|---|
+| 対応表の行数 | 348（記事に結び付いた画像。メディア全体の361枚とは一致しない） |
+| 記事フォルダ | 307 |
+| WebPファイル | 348（`poc/public/images/articles/`） |
+| PoCの `thumbnail` | 5本とも `/images/articles/{slug}/1.webp` に合わせた |
+
+ローカルのdev（`http://localhost:3001`）で、PoCの5本の `1.webp` が `200` / `image/webp` で届くことを確かめた。記事ページのテンプレートはまだ `thumbnail` を画面に出していない（パスの用意まで）。
+
 ## 次のステップ
 
 PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zodでのスキーマ検証（`slug` の形、`slug` とファイル名の一致、使えない `slug` を含む）、サジェストUI、検索結果の一覧（Pagefind JS API + 自前UI）、ピンマップ（地理院タイル、自前のピン、ポップアップ、カテゴリの絞り込み、クラスタリング）、記事ページへのYouTubeの埋め込み、区から探す（`/area/{英字}/` の一覧ページとトップページの入口）まで確認した。記事は5本（施設、主要駅、抜け道・定番ルート、交差点が `pinmap: true`、幹線道路が `pinmap: false`。主要駅の `tokyostation-yaesu` に `youtube` あり）。最後に残っていたPagefindの日本語の区切り方と一致のきまりも調べ（[日本語の区切り方と一致のきまり](#日本語の区切り方と一致のきまり)）、技術検証を締めくくった。
@@ -359,7 +373,8 @@ PoC（`poc/`）で、Markdown読み込み、Pagefindでの日本語検索、Zod�
 - ピンマップの一覧表示（サイドバー）の形（本実装のデザインの段階で決める）
 - ベースマップの本番での最終決定（PoCは地理院タイル。OpenStreetMapとの切り替えを検討）
 - 検索で関係の薄い記事まで当たることへの対策（そのまま受け入れる、検索語そのものを含む記事を上に並べる、完全一致検索。[日本語の区切り方と一致のきまり](#日本語の区切り方と一致のきまり)）
-- 画像の変換の道具（`cwebp` をシェルのくり返しで使うか、`sharp` でNode.jsのスクリプトを書くか）、英字のファイル名の付け方、記事の本文の中の画像の拾い方（形式と品質は決定。[画像](#画像)）
+- 記事ページへの `thumbnail` の表示（パスとファイルは用意済み。[画像](#画像)）
+- 本文Markdownへの画像の埋め込み（対応表はある。記事本文の一括移行と一緒に進める）
 - 固定ページの扱い（[URLルーティング](#urlルーティング)）
 - 記事データのJSONの書き出し（将来）。静的エクスポートでも、Route Handler（`route.ts`）の `GET` はビルド時に静的なファイルになり、JSONを書き出せる（`node_modules/next/dist/docs/01-app/02-guides/static-exports.md` の233〜235行目）。どのキーを出すかは、使うアプリを作るときに決める（[機能要件](../requirements/features.md#データの再利用将来の構想)）
 

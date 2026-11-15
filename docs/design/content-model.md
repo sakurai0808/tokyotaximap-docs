@@ -14,7 +14,7 @@
 | -------------------------------- | -------------------------------------------------------------- |
 | 設計サンプル（本リポジトリ）     | `docs/design/samples/articles/{slug}.md`                       |
 | 実装リポジトリ（将来）           | `content/articles/{slug}.md`                                   |
-| サムネイル画像（実装リポジトリ） | `public/images/articles/{slug}.webp` など（`thumbnail` と対応。[画像](#画像)） |
+| サムネイル画像（実装リポジトリ） | `public/images/articles/{slug}/{n}.webp`（`thumbnail` と対応。[画像](#画像)） |
 
 設計サンプル: [ザ・キャピトルホテル東急](./samples/articles/the-capitol-hotel-tokyu.md)
 
@@ -101,9 +101,10 @@
 
 - 形式は **WebPだけ**にする。予備のPNG・JPEGは置かない（[アプリケーション技術設計](../engineering/architecture.md#画像)）
 - 品質は **80**。横幅は縮めずに元のまま
-- 移行のときに、日本語のファイル名を英字の名前に変える（名前の付け方は移行のときに決める）
+- 置き場所は `public/images/articles/{slug}/{n}.webp`。`{n}` は記事ごとの順番（1始まり）。`thumbnail` はだいたい `/images/articles/{slug}/1.webp`
+- 日本語の元ファイル名は使わない。記事フォルダと番号で管理する（対応表は `migration/image-map.json`）
 - JPEGからWebPに変えても、JPEGで文字や線のふちに出たノイズは元に戻らない。移行のときに開いてみて、気になるものだけ、Illustratorの編集用のファイルからPNGで書き出し直してWebPにする
-- 新しく作る記事も、Illustratorから書き出したPNGをWebP（品質80）に変えて置く
+- 新しく作る記事も、Illustratorから書き出したPNGをWebP（品質80）に変えて、同じフォルダ規則で置く
 
 ## 検索・サジェスト
 
@@ -183,7 +184,7 @@ keywords:
   - キャピトルホテル東急
   - 赤坂東急ホテル
 tags: []
-thumbnail: /images/articles/the-capitol-hotel-tokyu.webp
+thumbnail: /images/articles/the-capitol-hotel-tokyu/1.webp
 pinmap: true
 location:
   lat: 35.673898
