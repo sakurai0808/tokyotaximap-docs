@@ -5,7 +5,13 @@ import type { SuggestItem } from "@/lib/articles";
 
 import Form from "next/form";
 
-export default function SuggestBox({ items }: { items: SuggestItem[] }) {
+export default function SuggestBox({
+  items,
+  onAfterSubmit,
+}: {
+  items: SuggestItem[];
+  onAfterSubmit?: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false); // サジェストの表示のONOFF
 
@@ -25,6 +31,7 @@ export default function SuggestBox({ items }: { items: SuggestItem[] }) {
         action="/search/"
         onSubmit={() => {
           setIsOpen(false);
+          onAfterSubmit?.();
         }}
       >
         <input

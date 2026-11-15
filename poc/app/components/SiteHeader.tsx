@@ -39,7 +39,7 @@ export default function SiteHeader({ items }: { items: SuggestItem[] }) {
           className="fixed inset-0 bg-black/40"
         >
           <div onClick={(e) => e.stopPropagation()}>
-            <SuggestBox items={items} />
+            <SuggestBox items={items} onAfterSubmit={() => setIsOpen(false)} />
             <button type="button" onClick={() => setIsOpen(false)}>
               閉じる
             </button>
