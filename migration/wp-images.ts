@@ -1,4 +1,6 @@
-// 既存のWordPressのコンテンツを読み込み、任意の形に取り込む
+import fs from "node:fs"; // ファイルを読んだり書いたりする道具箱
+
+// 既存のWordPressのコンテンツを読み込み、任意の形に取り込む。webpにしてダウンロード
 
 // WPの記事を全ページすべて取得する
 const wpContentList: {
@@ -44,8 +46,8 @@ const rows: {
   slug: string;
   index: number;
   mediaId: number;
-  sourceUrl: string;
-  destPath: string;
+  sourceUrl: string; // とってくるURL
+  destPath: string; // 作成したもののパス
 }[] = [];
 
 for (const article of articleImages) {
@@ -54,11 +56,17 @@ for (const article of articleImages) {
     if (!sourceUrl) return;
     rows.push({
       slug: article.slug,
-      index: i + 1,
+      index: i + 1, // その記事のなかでの番号
       mediaId,
       sourceUrl,
       destPath: `images/articles/${article.slug}/${i + 1}.webp`,
     });
   });
 }
-console.log(rows.filter((r) => r.slug === "tomigaya"));
+
+// 対応表をファイルに書き出す
+fs.writeFileSync(
+  "migration/image-map.json",
+  JSON.stringify(rows, null, 2), // 配列をJSONの文字列にする。2は字下げの数字
+);
+console.log(rows.length);
