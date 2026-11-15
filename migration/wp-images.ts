@@ -39,4 +39,26 @@ for (let page = 1; page <= 4; page++) {
     mediaById[item.id] = item.source_url; // idは、WPの画像の番号
   }
 }
-console.log(mediaById[3213]);
+
+const rows: {
+  slug: string;
+  index: number;
+  mediaId: number;
+  sourceUrl: string;
+  destPath: string;
+}[] = [];
+
+for (const article of articleImages) {
+  article.ids.forEach((mediaId, i) => {
+    const sourceUrl = mediaById[mediaId];
+    if (!sourceUrl) return;
+    rows.push({
+      slug: article.slug,
+      index: i + 1,
+      mediaId,
+      sourceUrl,
+      destPath: `images/articles/${article.slug}/${i + 1}.webp`,
+    });
+  });
+}
+console.log(rows.filter((r) => r.slug === "tomigaya"));
