@@ -11,7 +11,7 @@ keywords:
   - 八重洲口降車場
   - 大丸
 tags: [東京駅, 新幹線]
-thumbnail: /images/articles/tokyostation-yaesu.png
+thumbnail: /images/articles/tokyostation-yaesu/1.webp
 youtube: tBgaVIiAO_o
 pinmap: true
 location:

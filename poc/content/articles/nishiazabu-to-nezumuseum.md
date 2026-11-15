@@ -10,7 +10,7 @@ keywords:
   - 根津美術館
   - 北海園
 tags: []
-thumbnail: /images/articles/nishiazabu-to-nezumuseum.png
+thumbnail: /images/articles/nishiazabu-to-nezumuseum/1.webp
 pinmap: true
 location:
   lat: 35.66203090011344

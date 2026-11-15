@@ -7,7 +7,7 @@ category: 幹線道路
 city: [千代田区, 港区]
 keywords: []
 tags: []
-thumbnail: /images/articles/akasaka-street.png
+thumbnail: /images/articles/akasaka-street/1.webp
 pinmap: false
 ---
 

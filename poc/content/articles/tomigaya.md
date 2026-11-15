@@ -7,7 +7,7 @@ category: 交差点
 city: [渋谷区]
 keywords: []
 tags: []
-thumbnail: /images/articles/tomigaya.png
+thumbnail: /images/articles/tomigaya/1.webp
 pinmap: true
 location:
   lat: 35.667833396825976
