@@ -4,7 +4,7 @@
 
 コンテンツはMarkdownで管理する。カテゴリや記事ごとに優先すべき情報は異なるため、編集者が重要なブロックを本文の上部へ配置する。
 
-記事URLは `https://tokyotaximap.com/{slug}/` 形式とし、パスprefixは付けない。既存WordPressサイトの英字スラッグを引き継ぐ。区から探すのページは `/area/{英字}/` とする（[アプリケーション技術設計](../engineering/architecture.md#区から探す)）。
+記事URLは `https://tokyotaximap.com/{slug}/` 形式とし、パスprefixは付けない。既存WordPressサイトの英字スラッグを引き継ぐ。エリアから探す（区の一覧）のページは `/area/{英字}/` とする（[アプリケーション技術設計](../engineering/architecture.md#エリアから探す)）。
 
 ### ファイル配置
 
@@ -142,7 +142,7 @@ Pagefindは最終HTMLを索引化するため、front matterの `keywords` は�
 | `publishedAt` | string (`YYYY-MM-DD`) | 初回公開日。移行時はWordPressの公開日を引き継ぐ                             |
 | `updatedAt`   | string (`YYYY-MM-DD`) | 内容として意味のある最終更新日。表示の正とする（Gitのコミット日は使わない） |
 | `category`    | enum                  | [カテゴリ一覧](../requirements/content.md#単語系記事)                       |
-| `city`        | string[]              | 所属する区。区なしは `[]`。UI上は「区から探す」                             |
+| `city`        | string[]              | 所属する区。区なしは `[]`。UI上は「エリアから探す」                         |
 | `keywords`    | string[]              | 呼称の揺らぎ。なければ `[]`                                                 |
 | `pinmap`      | boolean               | ピンマップ掲載可否。全記事で `true` / `false` を明示                        |
 | `thumbnail`   | string                | サムネイル画像パス（一覧・SNS共有用）                                       |
