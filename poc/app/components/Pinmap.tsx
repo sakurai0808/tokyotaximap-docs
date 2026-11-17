@@ -93,7 +93,7 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
           type="button"
           aria-pressed={selectedCategory === null}
           onClick={() => setSelectedCategory(null)}
-          className={`inline-flex items-center gap-1
+          className={`cursor-pointer rounded-2xl border border-zinc-300 px-3 py-1 text-xs inline-flex items-center gap-1
                       ${selectedCategory === null ? "font-bold underline" : ""}`}
         >
           すべて
@@ -104,7 +104,7 @@ export default function Pinmap({ items }: { items: PinmapItem[] }) {
             type="button"
             aria-pressed={selectedCategory === cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`inline-flex items-center gap-1
+            className={`cursor-pointer rounded-2xl border border-zinc-300 px-3 py-1 text-xs inline-flex items-center gap-1
                         ${selectedCategory === cat ? "font-bold underline" : ""}`}
           >
             <span
