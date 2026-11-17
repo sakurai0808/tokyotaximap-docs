@@ -1,19 +1,25 @@
 // トップページを描画する(記事一覧の入口)
 
 import Link from "next/link";
-import { getPinmapItems } from "@/lib/articles";
+import { getPinmapItems, getArticleSummaries } from "@/lib/articles";
 import { cities, cityPaths } from "@/lib/schema";
 import PinmapLoader from "./components/PinmapLoader";
+import GenreBrowse from "./components/GenreBrowse";
 
 // ユーザーがトップ(/)にアクセスしたときに実行
 export default function Home() {
   const pinmapItems = getPinmapItems();
 
+  const articles = getArticleSummaries();
+
   return (
     <main className="px-6 py-4">
+      {/* ピンマップ */}
       <PinmapLoader items={pinmapItems} />
+      {/* ジャンルから探す */}
+      <GenreBrowse articles={articles} />
+      {/* 「エリアから探す」 */}
       <div className="mx-auto max-w-3xl">
-        {/* 「エリアから探す」 */}
         <h2>エリアから探す</h2>
         <div className="flex flex-wrap gap-2">
           {cities.map((c) => (
