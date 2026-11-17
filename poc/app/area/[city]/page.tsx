@@ -1,4 +1,4 @@
-// 区名から記事一覧ページを作成する
+// エリア名から記事一覧ページを作成する
 
 import { getArticleSummariesByCity } from "@/lib/articles";
 import { cities, cityPaths } from "@/lib/schema";
@@ -28,24 +28,21 @@ export default async function CityPage({ params }: PageProps) {
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-6 text-2xl font-bold">{cityName}</h1>
       {articles.length === 0 ? (
-        <p>この区の記事はまだありません</p>
+        <p>このエリアの記事はまだありません。</p>
       ) : (
-        <ul className="list-disc space-y-2 pl-6">
+        <div className="space-y-6">
           {articles.map((article) => (
-            <li key={article.slug}>
+            <div key={article.slug}>
               {/* .mapでjsxを並べたら必ずkeyを記述 */}
-              <Link
-                href={`/${article.slug}/`}
-                className="text-blue-600 underline"
-              >
+              <Link href={`/${article.slug}/`} className="block">
                 {article.title}
               </Link>
               <span className="ml-2 text-sm text-zinc-500">
                 {article.category} ・ 更新 {article.updatedAt}
               </span>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </main>
   );
