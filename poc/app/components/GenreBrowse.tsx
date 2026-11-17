@@ -32,10 +32,10 @@ export default function GenreBrowse({
   );
 
   return (
-    <div>
-      <h2>ジャンルから探す</h2>
+    <div className="mx-auto max-w-3xl">
+      <h2 className="text-center mb-6">ジャンルから探す</h2>
       {/* タブボタン列 */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 mb-[20px]">
         {genreCategories.map((c) => (
           <button
             key={c}
@@ -50,12 +50,20 @@ export default function GenreBrowse({
         ))}
       </div>
       {/* フィルターした記事一覧 */}
-      <div>
-        {visibleArticles.map((article) => (
-          <Link key={article.slug} href={`/${article.slug}/`}>
-            {article.title}
-          </Link>
-        ))}
+      <div className="space-y-[60px]">
+        {visibleArticles.length === 0 ? (
+          <p>このジャンルの記事はまだありません。</p>
+        ) : (
+          visibleArticles.map((article) => (
+            <Link
+              key={article.slug}
+              href={`/${article.slug}/`}
+              className="block"
+            >
+              {article.title}
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
