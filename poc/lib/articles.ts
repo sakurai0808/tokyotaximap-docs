@@ -6,6 +6,7 @@ import matter from "gray-matter"; // front matterを分割
 import { remark } from "remark";
 import html from "remark-html";
 import remarkGfm from "remark-gfm";
+import { defaultSchema } from "hast-util-sanitize"; // HTMLの安全設定の初期値（remark-htmlが使っているもの）
 import {
   articleSchema,
   type Category,
@@ -82,6 +83,33 @@ export function getArticleSummaries(): ArticleSummary[] {
 }
 
 // 記事の内容を読み取ってMarkdownからHTMLに出力する関数
+// Markdownの木（mdast）の中の節を表す型（ここでは最低限の形だけ決める）
+type MdNode = {
+  type: string;
+  value?: string;
+  children?: MdNode[];
+  data?: { hProperties?: Record<string, string> };
+};
+
+// 節の中の文字を、順番につなげて1つの文字列にする（見出し「**北の丸IC**」なども、文字だけ取り出す）
+function nodeText(node: MdNode): string {
+  if (typeof node.value === "string") return node.value;
+  return (node.children ?? []).map(nodeText).join("");
+}
+
+// 見出し（h2・h3）に、見出しの文字と同じ id を付ける。本文中の「#北の丸IC」へのリンクが飛べるようにするため
+function remarkHeadingIds() {
+  return (tree: MdNode) => {
+    const walk = (node: MdNode) => {
+      if (node.type === "heading") {
+        node.data = { ...node.data, hProperties: { id: nodeText(node) } };
+      }
+      node.children?.forEach(walk);
+    };
+    walk(tree);
+  };
+}
+
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
   // slugから.mdファイルのパスを組み立てる
   const filePath = path.join(articlesDir, `${slug}.md`);
@@ -94,7 +122,11 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
   const { frontMatter, content } = readArticleFile(slug);
   const processed = await remark()
     .use(remarkGfm) // GFM(表などの拡張機能)を解析できるようにする
-    .use(html)
+    .use(remarkHeadingIds) // 見出しに id を付ける（同じページ内のリンクを飛べるようにする）
+    .use(html, {
+      // 初期値は id に「user-content-」を付けるため、リンク先の #見出し と合わなくなる。付けないように変える（ほかの安全設定は初期値のまま）
+      sanitize: { ...defaultSchema, clobberPrefix: "" },
+    })
     .process(content); // Markdown文字列をHTML出力
 
   return {
