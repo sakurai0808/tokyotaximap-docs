@@ -1,7 +1,7 @@
-// Agentを使って作成
 // 既存のWordPressの記事を、poc/content/articles/ と同じ形（front matter＋Markdown本文）の下書きに変換する
 // 実行: node --experimental-strip-types migration/convert-articles.ts
 // 出力: migration/articles/{slug}.md（全件）。WordPressにない項目は、空のまま残す（Zodのエラーで埋め忘れを見つける）
+// 先に add-url-images.ts を実行して、URLだけで書かれた画像を対応表に入れておく
 
 import fs from "node:fs";
 import { unified } from "unified";
@@ -9,79 +9,70 @@ import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 import remarkGfm from "remark-gfm";
 import remarkStringify from "remark-stringify";
+import { format } from "prettier";
+import {
+  SITE,
+  fetchAllPosts,
+  readImageMap,
+  isLinkCardImage,
+  imgSrc,
+  wpImageId,
+  type WpPost,
+} from "./shared.ts";
 
-const SITE = "https://tokyotaximap.com";
-const IMAGE_MAP_PATH = "migration/image-map.json"; // wp-images.ts が作った対応表
 const OUT_DIR = "migration/articles";
-
-// WordPressの記事のうち、使う項目だけ
-type WpPost = {
-  id: number;
-  slug: string;
-  date: string; // 公開日。例: 2024-10-23T17:27:13（日本時間）
-  modified: string; // 最終更新日
-  title: { rendered: string };
-  content: { rendered: string };
-  featured_media: number; // 代表画像のID（0は代表画像なし）
-};
-
-// 対応表の1行（migration/image-map.json）
-type ImageRow = {
-  slug: string;
-  index: number;
-  mediaId: number;
-  sourceUrl: string;
-  destPath: string; // 例: images/articles/parkhyatt/1.webp
-};
 
 // 変換の途中で見つけた、人が確かめるべきこと
 type Problems = string[];
 
-// 1. 記事を全ページ取得する（総ページ数はレスポンスのヘッダーから読む）
-async function fetchAllPosts(): Promise<WpPost[]> {
-  const fields = "id,slug,date,modified,title,content,featured_media";
-  const first = await fetch(
-    `${SITE}/wp-json/wp/v2/posts?per_page=100&page=1&_fields=${fields}`,
-  );
-  if (!first.ok)
-    throw new Error(`記事の取得に失敗（1ページ目）: ${first.status}`);
-  const totalPages = Number(first.headers.get("x-wp-totalpages"));
-  const posts: WpPost[] = await first.json();
-
-  for (let page = 2; page <= totalPages; page++) {
-    const res = await fetch(
-      `${SITE}/wp-json/wp/v2/posts?per_page=100&page=${page}&_fields=${fields}`,
-    );
-    if (!res.ok)
-      throw new Error(`記事の取得に失敗（${page}ページ目）: ${res.status}`);
-    posts.push(...(await res.json()));
-  }
-  return posts;
-}
-
-// 2. 対応表を「記事のslug:画像のID → 保存先のパス」の辞書にする
+// 1. 対応表を辞書にする
+// ・WordPressの画像ID: 「記事のslug:画像ID」→ 保存先のパス
+// ・URLだけの画像: 「記事のslug:src:本文のsrc」→ 保存先のパス
 // 同じ画像IDが本文に複数回出ると対応表に行が重なるので、最初の1つだけを使う
 function loadImageMap(): Map<string, string> {
-  const rows: ImageRow[] = JSON.parse(fs.readFileSync(IMAGE_MAP_PATH, "utf8"));
   const map = new Map<string, string>();
-  for (const row of rows) {
-    const key = `${row.slug}:${row.mediaId}`;
+  for (const row of readImageMap()) {
+    const key =
+      row.mediaId !== null
+        ? `${row.slug}:${row.mediaId}`
+        : `${row.slug}:src:${row.srcInContent}`;
     if (!map.has(key)) map.set(key, `/${row.destPath}`);
   }
   return map;
+}
+
+// 2. WordPressの画像IDが、対応表になく、WordPressでも404かを確かめる
+// 404のものは、画像を消す（決めたこと）。ほかの理由で取れないものは、人が確かめる
+async function findGoneMediaIds(posts: WpPost[], images: Map<string, string>): Promise<Set<number>> {
+  const mapped = new Set([...images.keys()].map((k) => Number(k.split(":")[1])).filter((n) => !Number.isNaN(n)));
+  const ids = new Set<number>();
+  for (const post of posts) {
+    for (const m of post.content.rendered.matchAll(/<img\b[^>]*>/g)) {
+      const id = wpImageId(m[0]);
+      if (id !== undefined && !mapped.has(id)) ids.add(id);
+    }
+  }
+  const gone = new Set<number>();
+  for (const id of ids) {
+    const res = await fetch(`${SITE}/wp-json/wp/v2/media/${id}?_fields=id`);
+    if (res.status === 404) gone.add(id);
+  }
+  return gone;
 }
 
 // 3. タイトルのHTMLの実体参照（&amp; など）を、元の文字に戻す
 function decodeEntities(text: string): string {
   return text
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) =>
-      String.fromCodePoint(parseInt(h, 16)),
-    )
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&"); // &amp; は最後に戻す（先に戻すと、&amp;lt; が二重に戻ってしまう）
+}
+
+function replaceSrc(tag: string, dest: string): string {
+  return tag.replace(/\ssrc="[^"]*"/, ` src="${dest}"`);
 }
 
 // 4. 本文のHTMLを、変換しやすい形に前もって整える
@@ -89,6 +80,7 @@ function decodeEntities(text: string): string {
 function prepareHtml(
   post: WpPost,
   images: Map<string, string>,
+  gone: Set<number>,
   problems: Problems,
 ): { html: string; youtube?: string; mapRemoved: number } {
   let html = post.content.rendered;
@@ -102,57 +94,60 @@ function prepareHtml(
     /<iframe\b[^>]*\ssrc="(?:https?:)?\/\/(?:www\.)?(?:youtube\.com\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{11})[^"]*"[^>]*>[\s\S]*?<\/iframe>/gi;
   const youtubeIds = [...html.matchAll(youtubeRe)].map((m) => m[1]);
   if (youtubeIds.length > 1) {
-    problems.push(
-      `${post.slug}: YouTubeの埋め込みが${youtubeIds.length}個ある（最初の1つだけ使った）`,
-    );
+    problems.push(`${post.slug}: YouTubeの埋め込みが${youtubeIds.length}個ある（最初の1つだけ使った）`);
   }
   if (youtubeIds.length > 0) youtube = youtubeIds[0];
   html = html.replace(youtubeRe, "");
 
   // Googleマップの埋め込みは外す（地図は `## 地図(GoogleMap)` のプレースホルダにする。埋め込み方式は未決定）
-  const mapRe =
-    /<iframe\b[^>]*\ssrc="[^"]*google\.com[^"]*"[^>]*>[\s\S]*?<\/iframe>/gi;
+  const mapRe = /<iframe\b[^>]*\ssrc="[^"]*google\.com[^"]*"[^>]*>[\s\S]*?<\/iframe>/gi;
   const mapRemoved = [...html.matchAll(mapRe)].length;
   html = html.replace(mapRe, "");
 
   // 外したあとに残っているiframeは、人が確かめる
   const iframeLeft = (html.match(/<iframe\b/gi) ?? []).length;
   if (iframeLeft > 0) {
-    problems.push(
-      `${post.slug}: 本文にほかのiframeが${iframeLeft}個ある（手で確認）`,
-    );
+    problems.push(`${post.slug}: 本文にほかのiframeが${iframeLeft}個ある（手で確認）`);
   }
 
-  // 画像: wp-image-{id} の画像の src を、保存先のパスに置き換える
+  // 画像
   html = html.replace(/<img\b[^>]*>/g, (tag) => {
-    // リンクカード（プラグイン lkc-）のサムネイルと、ファビコンは本文の画像ではないので取り除く（リンクの文字は残る）
-    if (/class="[^"]*\blkc-/.test(tag) || /google\.com\/s2\/favicons/.test(tag))
-      return "";
-    const idMatch = tag.match(/wp-image-(\d+)/);
-    if (!idMatch) {
-      const src = tag.match(/\ssrc="([^"]*)"/)?.[1] ?? "(srcなし)";
-      problems.push(`${post.slug}: wp-imageのない画像（手で確認）: ${src}`);
+    // リンクカードのサムネイルと、ファビコンは取り除く（リンクの文字は残る）
+    if (isLinkCardImage(tag)) return "";
+
+    const id = wpImageId(tag);
+    if (id !== undefined) {
+      // WordPressの画像ID: 対応表の保存先に置き換える
+      const dest = images.get(`${post.slug}:${id}`);
+      if (dest) return replaceSrc(tag, dest);
+      // WordPressでも404の画像は、消す（決めたこと）。下書きの一覧に出して、確かめられるようにする
+      if (gone.has(id)) {
+        problems.push(`${post.slug}: 画像を削除した（WordPressで404。ID ${id}）`);
+        return "";
+      }
+      problems.push(`${post.slug}: 画像ID ${id} が対応表にない（手で確認）`);
       return tag;
     }
-    const dest = images.get(`${post.slug}:${idMatch[1]}`);
-    if (!dest) {
-      problems.push(
-        `${post.slug}: 画像ID ${idMatch[1]} が対応表にない（WordPressでも404。手で確認）`,
-      );
-      return tag;
-    }
-    return tag.replace(/\ssrc="[^"]*"/, ` src="${dest}"`);
+
+    // URLだけで書かれた画像: add-url-images.ts が対応表に入れたものを使う
+    const src = imgSrc(tag);
+    if (src === undefined) return tag;
+    const dest = images.get(`${post.slug}:src:${src}`);
+    if (dest) return replaceSrc(tag, dest);
+    problems.push(`${post.slug}: URLだけの画像が対応表にない（add-url-images.ts を実行する）: ${src}`);
+    return tag;
   });
+
+  // 見出し: WordPressの h4 は、h3 に直す（content-model.md の「h4は誤り、h3が正しい」）
+  html = html.replace(/<h4\b/gi, "<h3").replace(/<\/h4>/gi, "</h3>");
 
   // 記事内リンク: https://tokyotaximap.com/{slug}/ は /{slug}/ に書き換える（本番ドメインは書かない）
   // #で始まる目次用のアンカーは、残す（/{slug}/#見出し）
   html = html.replace(
     /href="https:\/\/tokyotaximap\.com\/([^"\/?#]+)\/?(#[^"]*)?"/g,
-    (_, slug: string, hash: string | undefined) =>
-      `href="/${slug}/${hash ?? ""}"`,
+    (_, slug: string, hash: string | undefined) => `href="/${slug}/${hash ?? ""}"`,
   );
-  const leftover =
-    html.match(/href="https?:\/\/tokyotaximap\.com[^"]*"/g) ?? [];
+  const leftover = html.match(/href="https?:\/\/tokyotaximap\.com[^"]*"/g) ?? [];
   for (const link of leftover) {
     problems.push(`${post.slug}: 内部リンクが残っている（手で確認）: ${link}`);
   }
@@ -185,10 +180,7 @@ function removeTocPlugin(counter: { n: number }) {
 // rehype-parse: HTMLの文字 → HTMLの木（hast）
 // rehype-remark: HTMLの木 → Markdownの木（mdast）
 // remark-stringify: Markdownの木 → Markdownの文字
-async function htmlToMarkdown(
-  html: string,
-  tocCounter: { n: number },
-): Promise<string> {
+async function htmlToMarkdown(html: string, tocCounter: { n: number }): Promise<string> {
   const file = await unified()
     .use(rehypeParse, { fragment: true })
     .use(removeTocPlugin, tocCounter)
@@ -233,6 +225,7 @@ function buildFrontMatter(
 async function main() {
   const posts = await fetchAllPosts();
   const images = loadImageMap();
+  const gone = await findGoneMediaIds(posts, images);
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const problems: Problems = [];
@@ -242,36 +235,32 @@ async function main() {
   let written = 0;
 
   for (const post of posts) {
-    for (const m of post.content.rendered.matchAll(
-      /<([a-zA-Z][a-zA-Z0-9]*)\b/g,
-    )) {
+    for (const m of post.content.rendered.matchAll(/<([a-zA-Z][a-zA-Z0-9]*)\b/g)) {
       const tag = m[1].toLowerCase();
       tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
     }
 
-    const prepared = prepareHtml(post, images, problems);
+    const prepared = prepareHtml(post, images, gone, problems);
     mapRemoved += prepared.mapRemoved;
     const body = await htmlToMarkdown(prepared.html, tocCounter);
 
     let thumbnail: string | undefined;
     if (post.featured_media) {
       thumbnail = images.get(`${post.slug}:${post.featured_media}`);
-      if (!thumbnail)
-        problems.push(
-          `${post.slug}: 代表画像（ID ${post.featured_media}）が対応表にない`,
-        );
+      if (!thumbnail) problems.push(`${post.slug}: 代表画像（ID ${post.featured_media}）が対応表にない`);
     }
 
-    const text = `${buildFrontMatter(post, thumbnail, prepared.youtube)}\n\n${body}\n`;
+    const raw = `${buildFrontMatter(post, thumbnail, prepared.youtube)}\n\n${body}\n`;
+    // 整形（Prettier。既定の設定）。空行などを整える
+    const text = await format(raw, { parser: "markdown" });
     fs.writeFileSync(`${OUT_DIR}/${post.slug}.md`, text);
     written++;
   }
 
-  console.log(
-    `記事: ${posts.length}本を取得、${written}本を書き出した（${OUT_DIR}/）`,
-  );
+  console.log(`記事: ${posts.length}本を取得、${written}本を書き出した（${OUT_DIR}/）`);
   console.log(`目次（ez-toc）を取り除いた要素: ${tocCounter.n}個`);
   console.log(`Googleマップの埋め込みを外した数: ${mapRemoved}個`);
+  console.log(`WordPressで404の画像（削除した）: ${gone.size}種類（ID: ${[...gone].join(", ") || "なし"}）`);
   console.log(`\n本文に出てきたHTMLタグ（多い順）:`);
   for (const [tag, count] of [...tagCounts].sort((a, b) => b[1] - a[1])) {
     console.log(`  <${tag}>: ${count}`);
