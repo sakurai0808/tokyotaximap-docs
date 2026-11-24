@@ -77,6 +77,23 @@ WordPressの既存テーマを使ったウェブサイト「[東京都心タク�
 - 出力したファイルを `poc/lib/schema.ts` で検証する（`node --experimental-strip-types` で読み込む）。空の項目は、エラーとして出ることも確かめる
 - 埋めたあとで `poc/content/articles/` へ移し、`npm run build` で記事ページが出ることを確かめる
 
+### 実装の結果（2026-11-24）
+
+- スクリプト: `migration/convert-articles.ts`。実行は `node --experimental-strip-types migration/convert-articles.ts`（依存は `migration/package.json`、`migration/node_modules/` は Git の対象外）
+- 出力: `migration/articles/{slug}.md` 310本
+- 自動で行うこと: 目次（ez-toc、97本）を取り除く。Googleマップの埋め込み（197個）を外す。地図の見出しを `## 地図(GoogleMap)` にする。リンクカードのサムネイルとファビコンを外す（リンクの文字は残す）。内部リンクを `/{slug}/` に書き換える（`#` の後ろは残す）
+- 人が確かめること（実行結果の「確認が必要なこと」）:
+  - `wp-image-{id}` のない画像（30件）。対応表に入っていないので、そのままWordPressのURLが残る。首都高の出入口の画像や、地図の見出しの画像など
+  - WordPressでも404の画像（3件）
+  - YouTubeの埋め込みが2個ある記事（2本）。最初の1つだけ使った
+  - 内部リンクの書き方が崩れている記事（1件）
+- 検証: 変換直後の `parkhyatt` は、`pinmap` の空で止まる（Zodは分岐ごとに確かめるため、ほかの空の項目のエラーは、`pinmap` を直すまで出ない）。手で埋めると通る
+
+### 未決定（実装のあとに決める）
+
+- 見出しの階層: WordPressの `h4` が371個あり、`##` の下に直接つく（`content-model.md` では `h4` は誤りで、`h3` が正しい）。変換のときに `h3` に直すか、手で直すか
+- `wp-image-{id}` のない画像の扱い（対応表への追加か、手で置くか）
+
 ### 決めていないこと
 
 - 試験版の30本の選び方の方針は、PoCの10本を含めて、カテゴリと区を散らす（2026-11-24に決定）。どの30本にするかは、変換したあとに決める

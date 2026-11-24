@@ -4872,3 +4872,76 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 - このログのコミット: `(Agent使用)docs: 記事の移行の仕様（変換ルール・作業の分担）を追記`（docsとログ）
 
 ---
+
+
+## 日時:2026-11-24 17:58 JST
+
+```
+（作業の順番）「Askモードで仕様を読み直す?どういうこと?」
+（作業の順番の選択）Agentがすぐ書き、出力を読みながら解説する。
+（技術）仕様を決めてから、Agentにやってもらいましょう。その際、技術についての解説は行ってください。
+```
+
+## 回答
+
+**2026-11-24 17:58 JST**
+
+---
+
+### 決定
+
+- 変換スクリプトは、Agentが書く（仕様は `docs/operations/migration.md`）。出力は `migration/articles/` に310本
+- 変換の道具は `rehype-remark`。依存は `migration/` の中だけに入れる（`poc/` の依存は変えない）
+- 自動で行うこと: 目次（ez-toc）を取り除く。Googleマップの埋め込みを外す。地図の見出しを `## 地図(GoogleMap)` にする。リンクカードのサムネイルとファビコンを外す。内部リンクを `/{slug}/` にする
+- 人が確かめること: `wp-image-{id}` のない画像、404の画像、YouTubeが2個ある記事、崩れたリンク
+- 未決定（次に決める）: 見出しの階層（h4が371個）、`wp-image-{id}` のない画像の扱い
+
+### 実装
+
+- `migration/convert-articles.ts`（新規）
+- `migration/package.json`（新規。`"type": "module"` と、変換の依存5つ）、`migration/package-lock.json`（新規）
+- `.gitignore`: `migration/node_modules/` を追加
+- `docs/operations/migration.md`: 「実装の結果（2026-11-24）」と「未決定」の節を追加
+- `poc/` は変えていない
+
+### 学んだこと
+
+- WordPressのREST APIは、ヘッダー `X-WP-TotalPages` で総ページ数がわかる。ページ数を決め打ちしない
+- 文字の並びを正規表現で書き換える方法は、単純な形には向く。目次のように入れ子になったdivは、HTMLの木（hast）で探すと正しく取り除ける
+- 変換の順番は、HTMLを読む → 木を加工する → Markdownの木にする → 文字にする、の4段階
+- Zodは分岐（`discriminatedUnion`）ごとに確かめる。`pinmap` が決まらないと、ほかの空の項目のエラーが出ない。エラーは一度に全部は出ない
+- 実体参照（`&amp;`）は、`&amp;` を最後に戻す。先に戻すと二重に戻る
+- WordPressのプラグインが作るHTML（目次の `ez-toc`、リンクカードの `lkc-`）は、本文ではないので、取り除く判断が要る
+
+### つまずいた点
+
+- 1回目の実行で確認項目が570件出た。原因は、Googleマップの埋め込みをYouTube以外の `iframe` として数えたこと、内部リンクのアンカー（`#…`）を書き換えていなかったこと、リンクカードの画像が本文の画像として数えられたこと
+- WordPressの画像ID 3257・3256・3112・748・766・1649 は、WordPressでも404（メディアが削除されている）
+- AskQuestion が「仮の質問に見える」と表示されず、一度やり直した。また、途中で中断された（前の項目と同じ）
+- 「Askモードで読み直す」という私の言い方が、必要のない手順に見えた（指摘を受けて説明し直した）
+
+### 確認結果
+
+| 確かめたこと | 結果 |
+|---|---|
+| 取得した記事数（REST API、`X-WP-TotalPages`） | 310本（2026-11-13の記録と一致） |
+| 出力したファイル数 | 310本（`migration/articles/`） |
+| 目次（ez-toc）が残っているか | 0件（97本から取り除いた） |
+| iframe（Googleマップ・YouTube）が残っているか | 0件（Googleマップ197個を外し、YouTubeは動画IDにした） |
+| リンクカードの `lkc-` が残っているか | 0件 |
+| `parkhyatt` のZod検証（変換直後） | 失敗（`pinmap` が空のため） |
+| `parkhyatt` のZod検証（手で埋めた後の仮の値） | 成功 |
+| `wp-image-{id}` のない画像 | 30件（確認項目に出している） |
+| WordPressでも404の画像 | 3件（確認項目に出している） |
+| 見出しの `h4` | 371個（未決定） |
+| git（作業の後） | 変更は、`.gitignore`、`docs/operations/migration.md`、`logs/engineering/architecture.md`、`migration/`（新規）。コミットはしていない |
+
+### 次のステップ
+
+- 見出しの階層（`h4` → `h3`にするか）を決める
+- `wp-image-{id}` のない画像の扱いを決める（首都高の出入口の画像などが対象）
+- 確認項目（YouTubeが2個ある2本、崩れたリンク1件、404の画像）を、ユーザーが一緒に見る
+- 空行が多いので、整形（Prettier）を入れるか決める
+- コミットの提案: `(Agent使用)add: 記事の移行の変換スクリプトを追加（migration/）`（スクリプトと依存）、`(Agent使用)docs: 変換の実装結果と未決定を追記`（docsとログ）
+
+---
