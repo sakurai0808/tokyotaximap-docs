@@ -22,3 +22,62 @@ WordPressの既存テーマを使ったウェブサイト「[東京都心タク�
 3. 既存記事を順次リライトする。
 
 開発者はデザインとエンジニアリングの初学者であり、1人で開発を進めている。リニューアル時に全記事の情報配置まで変更し終えることは、現実的ではないという事情も考慮する。
+
+## 記事の変換（試験版から使う）
+
+既存のWordPressの記事を、`poc/content/articles/` と同じ形（YAML front matter＋Markdown本文）の下書きに変える。変換の道具はAgentに書いてもらい、ユーザーが出力を確かめて、WordPressにない情報を手で埋める。
+
+### 決めたこと（2026-11-24）
+
+| 項目             | 決定                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| 出力先           | `migration/articles/{slug}.md`（全件）。埋めたあとで `poc/content/articles/` へ移す |
+| `updatedAt`      | WordPressの `modified` の日付部分                                                   |
+| `thumbnail`      | WordPressの代表画像（`featured_media`）                                             |
+| 変換の道具       | `rehype-remark`（HTMLの木をmdastにし、`remark-stringify` で文字にする）             |
+| 既存の手書き10本 | 変換の対象に含めるが、`poc/content/articles/` には上書きしない                      |
+
+### 作業の分担
+
+| 作業                                                                          | 担当                                                      |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 変換スクリプトを書く                                                          | Agent                                                     |
+| 出力を読んで、確かめる                                                        | ユーザー（Askモードで一緒に読む。技術の解説もここで行う） |
+| WordPressにない front matter の項目を埋める（約300本。1本10〜15分の見積もり） | ユーザー                                                  |
+| 本文の確認と、保存後の表示の確認                                              | ユーザー                                                  |
+
+### 入力
+
+- WordPress REST API `https://tokyotaximap.com/wp-json/wp/v2/posts`（認証なしで返る公開中の記事。2026-11-13時点で310本）
+- 取得する項目（`_fields`）: `slug`、`title`、`date`、`modified`、`content`、`featured_media`
+- `per_page=100` でページを進める（`migration/wp-images.ts` と同じ形）
+
+### 変換ルール
+
+| 項目                                                            | ルール                                                                                                                                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `title`                                                         | `title.rendered` の HTMLの実体参照（`&amp;` など）を元の文字に戻す                                                                                                       |
+| `slug`                                                          | WordPressのslugをそのまま使う                                                                                                                                            |
+| `publishedAt`                                                   | `date` の日付部分（`YYYY-MM-DD`）                                                                                                                                        |
+| `updatedAt`                                                     | `modified` の日付部分                                                                                                                                                    |
+| `tags`                                                          | `[]`                                                                                                                                                                     |
+| `thumbnail`                                                     | 代表画像（`featured_media`）の `destPath`（`/images/articles/{slug}/{n}.webp`）。`1.webp` に決め打ちしない（本文に出てこない代表画像は、番号が後ろになることがあるため） |
+| `youtube`                                                       | 本文のiframeの `src` から、11文字の動画IDを取り出す。動画がなければキーを省く                                                                                            |
+| `category`・`city`・`keywords`・`pinmap`・`location`・`summary` | キーだけ残し、値は書かない。空のままにして、埋め忘れをZodのエラーで見つける（`[]` にすると通ってしまうため）                                                             |
+| 本文                                                            | HTMLをMarkdownに変換する。WordPressのブロック用コメント（`<!-- wp:… -->`）は取り除く。対応するMarkdownがない `span`・`div` などは、タグだけ取り除き、中の文字は残す      |
+| 画像                                                            | 本文の `wp-image-{id}` の画像のURLを、`migration/image-map.json` の `destPath` に置き換える                                                                              |
+
+### 注意点
+
+- 同じ画像IDが本文に2回以上出ると、`migration/image-map.json` の行が重なる。変換のときは、同じIDを1つにまとめる
+- `date` と `modified` は、WordPressの日本時間の日付になる。日付部分だけを使う
+
+### 検証
+
+- 出力したファイルを `poc/lib/schema.ts` で検証する（`node --experimental-strip-types` で読み込む）。空の項目は、エラーとして出ることも確かめる
+- 埋めたあとで `poc/content/articles/` へ移し、`npm run build` で記事ページが出ることを確かめる
+
+### 決めていないこと
+
+- 試験版の30本の選び方の方針は、PoCの10本を含めて、カテゴリと区を散らす（2026-11-24に決定）。どの30本にするかは、変換したあとに決める
+- `updatedAt` に `modified` を使うと、軽い修正でも日付が進む。内容として意味のある更新日かは、記事を埋めるときに確かめる
