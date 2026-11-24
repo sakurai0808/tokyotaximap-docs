@@ -1,5 +1,8 @@
 .DS_Store
 
+# 移行スクリプトの道具
+migration/node_modules/
+
 # Next.js PoC
 poc/node_modules/
 poc/.next/
