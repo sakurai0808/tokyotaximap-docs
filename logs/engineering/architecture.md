@@ -4668,3 +4668,70 @@ export async function generateStaticParams(): Promise<{ city: string }[]> {
 - 本番の公開のときに、`_headers` のnoindexを外す
 
 ---
+
+
+## 日時:2026-11-24 16:55 JST
+
+```
+記事作成のフェーズは問題形式なしで、私が書いてチェックだけでOK。パークハイアット、新橋演舞場、大久保通り、小滝橋通り、飯倉IC（入口）と記事を増やしている。見出しと重要ブロックの決まりを、首都高の記事に合わせて直したい。まとめてお願い。
+```
+
+## 回答
+
+**2026-11-24 16:55 JST**
+
+---
+
+### 決定
+
+- 内容依存の見出しを認める。見出しは `##` を基本にし、区分が増えるときに `###` を使ってよい。首都高では、ルートの区分（パターン1、2…）に `###` をよく使う（`docs/design/content-model.md` の本文構成）
+- 首都高の重要ブロックは **構造 → 周辺のエリア** の順（同じ文書の重要ブロック）
+- 固定の見出し（住所・車寄せ・基本事項・地図）は、型のとおりに付ける
+- 「h4」は誤りだった。h2の下のh3が正しい階層で、h4を使うには先にh3の親が必要
+
+### 実装
+
+- docs: `docs/design/content-model.md` の重要ブロック（首都高の並び）と本文構成（見出しの決まり）を更新
+- logs: 本項目を追記
+- コードは変更していない。`poc/content/articles/iikura-entrance.md` はユーザーの作成した未コミットのファイル
+
+### 学んだこと
+
+- `remark-html` は既定で、HTMLタグを消して中身の文字だけを残す。`<span style="…">`・`<div>`・`<mark>`・`class` は効かない。装飾は、Markdownの `>`（引用）と `**`（太字）に、見た目はCSSで付ける
+- `>` は `<blockquote>` として残る。吹き出しの見た目は、CSS（`article blockquote`）で決める
+- 見出しの `#` の数が段階（`#`=h1、`##`=h2、`###`=h3、`####`=h4）。h2の下にいきなりh4を置くと、h3が抜ける
+- Tailwindのリセット（`preflight.css` の78〜84行）は、h1〜h6の文字の大きさを本文と同じに戻す。見出しに大きさを出すには、CSSを書く
+- コントラスト比の目安は、本文で4.5:1（WCAG）。白背景では、`#95c7ec` は約1.8:1で不足、`#0072b2` は約5.2:1で足りる。色だけに頼らず、下線と「注意」などの文字も付ける
+- YAMLのfront matterは、字下げで親子が決まる。キーは0字下げ、リストの `-` と `location` の中身は2字下げ
+- 日本語入力中のEnterは変換の確定に使われ、フォームが送信されることがある（AskQuestionの自由記入で、「内容依存依存」「内容依存の」が途中で送られた）
+
+### つまずいた点
+
+- 赤字・黄マーカーの `<span style>` が、サイトでは効いていなかった（Agentの「そのまま通る」は誤りで、読み取りの確認で分かった）。対象は `shinbashienbujo.md` 31行、`tokyostation-yaesu.md` 46・58行、`tomigaya.md` 31行
+- `otakibashi-street.md` の字下げが崩れていて、保存のたびに空行が動いた（front matterを直して解消）
+- slug `ikura-entrance` と画像フォルダ `iikura-entrance` が合っていなかった（slugを `iikura-entrance` に揃えた）
+- 見出しのh4の提案は、階層の誤りだった（h3が正しい）
+
+### 確認結果
+
+| 確かめたこと | 結果 |
+|---|---|
+| remark-html で `<span style>`・`<div>`・`<mark>`・`class` | タグは消え、文字だけ残る（読み取り専用のスクリプトで確認。ファイルは変えていない） |
+| remark-html で `>` の引用 | `<blockquote>` として残る（同じ確認） |
+| Tailwind preflight の h1〜h6 | 文字の大きさは `inherit`（本文と同じ） |
+| `iikura-entrance` の slug・サムネイル・画像フォルダ | 一致（`public/images/articles/iikura-entrance/1.webp` あり） |
+| 本文のリンク色（`#0072b2`）と下線 | ユーザーが画面で確認（視認性が上がったと判断） |
+| Zodによるfront matterの検証 | 未確認（この環境では `tsx` が動かなかった） |
+| 保存で行がずれないか（otakibashi-street） | 未確認（ユーザーの保存確認はまだ報告なし） |
+| 吹き出し（`>`）の見た目 | 未確認（CSSがまだない） |
+| git（作業開始時） | `?? poc/content/articles/iikura-entrance.md`（未コミット）のみ |
+
+### 次のステップ
+
+- 見出し（`###`）と吹き出し（`>`）の見た目を、`globals.css` にCSSで書く（文案を出してから実装）
+- 赤字・黄マーカーの `span` を、`>` の注意に置き換えるか決める（4か所）
+- `iikura-entrance` の仕上げ（保存で行がずれないか、front matterの検証）
+- コミットの提案: docs・logsは `(Agent使用)docs: …`、記事は `(Agent解説使用)add: …`
+- 重要ブロックの例（`docs/design/content-model.md` の「首都高: 右折禁止の情報」）が、新しい並びと合っているか確認
+
+---
