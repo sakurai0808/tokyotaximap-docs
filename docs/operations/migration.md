@@ -77,22 +77,37 @@ WordPressの既存テーマを使ったウェブサイト「[東京都心タク�
 - 出力したファイルを `poc/lib/schema.ts` で検証する（`node --experimental-strip-types` で読み込む）。空の項目は、エラーとして出ることも確かめる
 - 埋めたあとで `poc/content/articles/` へ移し、`npm run build` で記事ページが出ることを確かめる
 
-### 実装の結果（2026-11-24）
+### 実行の手順
 
-- スクリプト: `migration/convert-articles.ts`。実行は `node --experimental-strip-types migration/convert-articles.ts`（依存は `migration/package.json`、`migration/node_modules/` は Git の対象外）
-- 出力: `migration/articles/{slug}.md` 310本
-- 自動で行うこと: 目次（ez-toc、97本）を取り除く。Googleマップの埋め込み（197個）を外す。地図の見出しを `## 地図(GoogleMap)` にする。リンクカードのサムネイルとファビコンを外す（リンクの文字は残す）。内部リンクを `/{slug}/` に書き換える（`#` の後ろは残す）
-- 人が確かめること（実行結果の「確認が必要なこと」）:
-  - `wp-image-{id}` のない画像（30件）。対応表に入っていないので、そのままWordPressのURLが残る。首都高の出入口の画像や、地図の見出しの画像など
-  - WordPressでも404の画像（3件）
-  - YouTubeの埋め込みが2個ある記事（2本）。最初の1つだけ使った
-  - 内部リンクの書き方が崩れている記事（1件）
+1. `node --experimental-strip-types migration/add-url-images.ts`：本文にURLだけで書かれた画像を、対応表（`migration/image-map.json`）に加えて、`poc/public/images/articles/{slug}/{n}.webp` にダウンロードする（何度実行しても同じ結果。対応表は373行）
+2. `node --experimental-strip-types migration/convert-articles.ts`：記事を `migration/articles/{slug}.md` に書き出す（310本。Prettierで整形済み）
+
+依存は `migration/package.json`。`migration/node_modules/` は Git の対象外。
+
+### 変換で自動的に行うこと
+
+- 目次（ez-toc、97本）を取り除く
+- Googleマップの埋め込み（197個）を外し、地図の見出しを `## 地図(GoogleMap)` にする
+- リンクカードのサムネイルとファビコンを外す（リンクの文字は残す）
+- 内部リンクを `/{slug}/` に書き換える（`#` の後ろは残す）
+- 見出しの `h4` を `h3` に直す（決めたこと）
+- WordPressでも404の画像（6件）は、画像を消し、下書きの一覧に出す（決めたこと）
+- URLだけの画像（25件）は、`add-url-images.ts` が対応表に入れた先を使う（決めたこと）
+
+### 人が確かめること（変換の「確認が必要なこと」）
+
+- WordPressでも404の画像を消した6件（一覧に出す）
+- YouTubeの埋め込みが2個ある記事（2本）。最初の1つだけ使った
+- 内部リンクの書き方が崩れている記事（1件）
+- 同じロゴ画像（`cropped-地図　東京タクマップ用.png`）が、複数の記事に入った。記事ごとに1枚ずつ置いているので、同じ画像が増えている。必要かどうかは確かめる
 - 検証: 変換直後の `parkhyatt` は、`pinmap` の空で止まる（Zodは分岐ごとに確かめるため、ほかの空の項目のエラーは、`pinmap` を直すまで出ない）。手で埋めると通る
 
-### 未決定（実装のあとに決める）
+### 決めたこと（2026-11-24）
 
-- 見出しの階層: WordPressの `h4` が371個あり、`##` の下に直接つく（`content-model.md` では `h4` は誤りで、`h3` が正しい）。変換のときに `h3` に直すか、手で直すか
-- `wp-image-{id}` のない画像の扱い（対応表への追加か、手で置くか）
+- 見出し: WordPressの `h4` は、変換で `h3` に直す（`content-model.md` の「h4は誤り、h3が正しい」に合わせる）
+- `wp-image-{id}` のない画像（URLだけで書かれた画像）: 対応表に加えて、スクリプトでダウンロードし、`images/articles/{slug}/{n}.webp` に置く
+- WordPressでも404の画像: 画像は消し、下書きの一覧に出す
+- 出力の整形: 変換のあとにPrettierをかける（空行を整える）
 
 ### 決めていないこと
 
