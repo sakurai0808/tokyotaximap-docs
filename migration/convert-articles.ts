@@ -176,6 +176,64 @@ function removeTocPlugin(counter: { n: number }) {
   return (tree: HastNode) => removeById(tree, "ez-toc-container", counter);
 }
 
+// remark-stringify は、太字（**…**）の直後の日本語を &#x3067; のような実体参照に書き換えることがある
+// （「白洋舎ビル**です**」→「白洋舎ビル**&#x3067;す**」の形になる）。元の文字に戻す。
+// 英数字（C&#x31; = C1 など）も戻す。記号（&#x2A; = * など）は Markdown の記号になるため戻さない
+function decodeSafeReferences(text: string): string {
+  const isSafe = (cp: number) => cp >= 0x80 || /[0-9A-Za-z]/.test(String.fromCodePoint(cp));
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (m, h: string) => {
+      const cp = parseInt(h, 16);
+      return isSafe(cp) ? String.fromCodePoint(cp) : m;
+    })
+    .replace(/&#(\d+);/g, (m, n: string) => {
+      const cp = Number(n);
+      return isSafe(cp) ? String.fromCodePoint(cp) : m;
+    });
+}
+
+// 5b. 強調（斜体・太字）の閉じの記号が、記号（)など）の直後にあり、その後ろに日本語が続く形を直す
+// Markdownの規則では、この形の閉じの記号は効かず、記号がそのまま表示される（例: *[リンク](…)*の途中）
+// 直し方: 強調の記号を外して、文字だけ残す（案A）
+type MdNode = { type: string; value?: string; children?: MdNode[] };
+
+function isPunctOrSpace(ch: string): boolean {
+  return /[\s\p{P}\p{S}]/u.test(ch);
+}
+
+function lastCharOf(node: MdNode): string {
+  if (node.value !== undefined) return node.value.slice(-1);
+  if (!node.children?.length) return "";
+  return lastCharOf(node.children[node.children.length - 1]);
+}
+
+function startsWithSafeChar(node: MdNode | undefined): boolean {
+  if (!node) return false;
+  if (node.type !== "text" || node.value === undefined) return true; // 文字以外（リンク等）は、記号の直後として問題にしない
+  const ch = node.value.charAt(0);
+  return ch !== "" && !isPunctOrSpace(ch);
+}
+
+function fixEmphasisAfterPunct() {
+  return (tree: MdNode) => {
+    const walk = (node: MdNode) => {
+      if (!node.children) return;
+      for (const child of node.children) walk(child);
+      for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        if (child.type !== "emphasis" && child.type !== "strong") continue;
+        const inner = child.children ?? [];
+        const last = inner[inner.length - 1];
+        const closingAfterSymbol = last?.type === "link" || isPunctOrSpace(lastCharOf(child));
+        if (!closingAfterSymbol || !startsWithSafeChar(node.children[i + 1])) continue;
+        node.children.splice(i, 1, ...inner); // 記号を外し、中身だけ残す
+        i += inner.length - 1;
+      }
+    };
+    walk(tree);
+  };
+}
+
 // 6. HTMLをMarkdownに変換する（rehype-parse → 目次を外す → rehype-remark → remark-stringify）
 // rehype-parse: HTMLの文字 → HTMLの木（hast）
 // rehype-remark: HTMLの木 → Markdownの木（mdast）
@@ -185,12 +243,12 @@ async function htmlToMarkdown(html: string, tocCounter: { n: number }): Promise<
     .use(rehypeParse, { fragment: true })
     .use(removeTocPlugin, tocCounter)
     .use(rehypeRemark)
+    .use(fixEmphasisAfterPunct)
     .use(remarkGfm)
     .use(remarkStringify)
     .process(html);
   // 地図の見出しは、プレースホルダの名前にそろえる（PoCの記事と同じ）
-  return String(file)
-    .trim()
+  return decodeSafeReferences(String(file).trim())
     .replace(/^## (google|Google)マップ$/gm, "## 地図(GoogleMap)");
 }
 
