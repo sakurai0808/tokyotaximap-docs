@@ -108,8 +108,16 @@ WordPressの既存テーマを使ったウェブサイト「[東京都心タク�
 - `wp-image-{id}` のない画像（URLだけで書かれた画像）: 対応表に加えて、スクリプトでダウンロードし、`images/articles/{slug}/{n}.webp` に置く
 - WordPressでも404の画像: 画像は消し、下書きの一覧に出す
 - 出力の整形: 変換のあとにPrettierをかける（空行を整える）
+- 内部リンク（試験版の30本に入っていない記事へのリンク）: 残す（2026-11-24 20:06 JST）。試験版では行き先がなく、リンクを押すと404になる。試験版は内々に見てもらい、「リンクは途切れているものも多い」ことを伝えてから見てもらう（2026-11-24 20:51 JST）。本番までに、表示の扱い（文字だけにする、など）を決める
+- 主要エリア解説（`category: 主要エリア解説`）の記事: 「基本事項」の見出しと地図を置かない。WordPressでも地図を置いていないため（2026-11-24 20:51 JST）。`pinmap: false` で、`location`・`summary` も書かない
+- 強調記号（`*`・`_`）の閉じが記号の後ろにあり、日本語が続く形: 変換で記号を外す（2026-11-24 19:40 JST）。ただし、開きと閉じの記号が対応しない形（`*…_`）は変換では直らないので、記事ごとに手で直す（`kyobashi-exit` で行った）
 
 ### 決めていないこと
 
-- 試験版の30本の選び方の方針は、PoCの10本を含めて、カテゴリと区を散らす（2026-11-24に決定）。どの30本にするかは、変換したあとに決める
+- 試験版の30本は、PoCの10本に加えて、移行した記事20本で作る。区とジャンルを散らす（2026-11-24に決定）。20本は次のとおり（WordPressの分類から作った候補を、そのまま採用）
+  - hakuyosha-shibuya、shinjuku-kuyakusho、showadori-tsukudaohashi、gyoko-street、akabanebashi、about-route-c1、nakano-street-shibuya-nakano、donki-shinjukukabukicho、tokyostation-marunouchi、tokyomidtown-hibiya、azabu-area、shinagawa-station、todaiura、mod、nihonbashinorth、yomiurishibun、sanno-hospital、sangubashi、godzila-head
+  - 2026-11-24 19:58 JST の変更: `kyobashi-exit`（首都高、PoCに追加）を残すため、候補から `hotel-gosanke` を外した。候補は19本（+PoC10本+`kyobashi-exit` = 30本）
+  - 編集のときに決める: 「目印」「主要エリア」由来のジャンル（`features.md` の決まりで「施設」に含める）、区が無い2本（`shinagawa-station`・`about-route-c1`）の区、`about-route-c1` のジャンル（首都高かタクシー基礎か）
 - `updatedAt` に `modified` を使うと、軽い修正でも日付が進む。内容として意味のある更新日かは、記事を埋めるときに確かめる
+- リンクカード（WordPressの `lkc` プラグインの、外部サイトの紹介カード）の表現は未決定。変換では削除している（2026-11-24）。30本を作ったあとに考える
+- 試験版の目標は、Zennのような読みやすさ（2026-11-24の確認）。見た目の具体的な決めは、30本を作ったあとに行う
