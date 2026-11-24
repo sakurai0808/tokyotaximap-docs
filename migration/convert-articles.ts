@@ -160,6 +160,8 @@ function prepareHtml(
 // 文字の並びではなく木で探すので、入れ子のdivがあっても正しく取り除ける
 type HastNode = {
   type: string;
+  tagName?: string;
+  value?: string;
   properties?: Record<string, unknown>;
   children?: HastNode[];
 };
@@ -174,6 +176,71 @@ function removeById(node: HastNode, id: string, counter: { n: number }): void {
 
 function removeTocPlugin(counter: { n: number }) {
   return (tree: HastNode) => removeById(tree, "ez-toc-container", counter);
+}
+
+// クラス名を持つか（hast では className が配列で入る）
+function hasClass(node: HastNode, name: string): boolean {
+  const cls = node.properties?.className;
+  if (Array.isArray(cls)) return cls.includes(name);
+  return typeof cls === "string" && cls.split(" ").includes(name);
+}
+
+// 木の中から、クラス名を持つ最初の要素を探す（入れ子でも探せる）
+function findByClass(node: HastNode, name: string): HastNode | undefined {
+  if (hasClass(node, name)) return node;
+  for (const child of node.children ?? []) {
+    const found = findByClass(child, name);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+// 木の中の文字を、つなげて1つの文字列にする
+function textOf(node: HastNode): string {
+  if (node.type === "text") return node.value ?? "";
+  return (node.children ?? []).map(textOf).join("");
+}
+
+// リンクカード（WordPressのlkcプラグインの `<div class="linkcard">`）を、タイトルのリンクだけの段落にする。
+// 説明文・URL・サイト名・日付・共有ボタンの文字は取り除く（決めたこと 2026-11-25: タイトルのリンクだけ残す）
+function linkCardToParagraph(card: HastNode): HastNode | undefined {
+  const link = findByClass(card, "lkc-link");
+  const title = findByClass(card, "lkc-title-text");
+  if (!link || !title) return undefined;
+  return {
+    type: "element",
+    tagName: "p",
+    properties: {},
+    children: [
+      {
+        type: "element",
+        tagName: "a",
+        properties: { href: link.properties?.href },
+        children: [{ type: "text", value: textOf(title) }],
+      },
+    ],
+  };
+}
+
+// リンクカードを、タイトルのリンクの段落に置き換える（タイトルが見つからなければ、取り除く）
+function removeLinkCards(node: HastNode, counter: { n: number }): void {
+  if (!node.children) return;
+  const next: HastNode[] = [];
+  for (const child of node.children) {
+    if (hasClass(child, "linkcard")) {
+      counter.n += 1;
+      const paragraph = linkCardToParagraph(child);
+      if (paragraph) next.push(paragraph);
+      continue;
+    }
+    next.push(child);
+  }
+  node.children = next;
+  for (const child of node.children) removeLinkCards(child, counter);
+}
+
+function removeLinkCardsPlugin(counter: { n: number }) {
+  return (tree: HastNode) => removeLinkCards(tree, counter);
 }
 
 // remark-stringify は、太字（**…**）の直後の日本語を &#x3067; のような実体参照に書き換えることがある
@@ -238,10 +305,15 @@ function fixEmphasisAfterPunct() {
 // rehype-parse: HTMLの文字 → HTMLの木（hast）
 // rehype-remark: HTMLの木 → Markdownの木（mdast）
 // remark-stringify: Markdownの木 → Markdownの文字
-async function htmlToMarkdown(html: string, tocCounter: { n: number }): Promise<string> {
+async function htmlToMarkdown(
+  html: string,
+  tocCounter: { n: number },
+  cardCounter: { n: number },
+): Promise<string> {
   const file = await unified()
     .use(rehypeParse, { fragment: true })
     .use(removeTocPlugin, tocCounter)
+    .use(removeLinkCardsPlugin, cardCounter)
     .use(rehypeRemark)
     .use(fixEmphasisAfterPunct)
     .use(remarkGfm)
@@ -289,6 +361,7 @@ async function main() {
   const problems: Problems = [];
   const tagCounts = new Map<string, number>(); // 本文に出てきたHTMLタグの数（対応の確認用）
   const tocCounter = { n: 0 };
+  const cardCounter = { n: 0 };
   let mapRemoved = 0;
   let written = 0;
 
@@ -300,7 +373,7 @@ async function main() {
 
     const prepared = prepareHtml(post, images, gone, problems);
     mapRemoved += prepared.mapRemoved;
-    const body = await htmlToMarkdown(prepared.html, tocCounter);
+    const body = await htmlToMarkdown(prepared.html, tocCounter, cardCounter);
 
     let thumbnail: string | undefined;
     if (post.featured_media) {
@@ -317,6 +390,7 @@ async function main() {
 
   console.log(`記事: ${posts.length}本を取得、${written}本を書き出した（${OUT_DIR}/）`);
   console.log(`目次（ez-toc）を取り除いた要素: ${tocCounter.n}個`);
+  console.log(`リンクカードの数（タイトルのリンクだけ残した）: ${cardCounter.n}個`);
   console.log(`Googleマップの埋め込みを外した数: ${mapRemoved}個`);
   console.log(`WordPressで404の画像（削除した）: ${gone.size}種類（ID: ${[...gone].join(", ") || "なし"}）`);
   console.log(`\n本文に出てきたHTMLタグ（多い順）:`);
