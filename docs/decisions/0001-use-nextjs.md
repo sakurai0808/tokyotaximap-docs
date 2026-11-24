@@ -20,4 +20,4 @@ WordPressの使用を終了し、リニューアル後のウェブアプリケ�
 ## 継続して検討する事項
 
 - `tags` のenumリスト
-- `poc/` から本実装への移り方（ビルドの設定は [インフラ設計](../engineering/infrastructure.md#ビルドの設定) で決定）
+- `poc/` から本実装への移り方: 本実装は別のリポジトリにすることを [ADR 0002](0002-separate-implementation-repo.md) で決定。切り替えの手順は未着手（ビルドの設定は [インフラ設計](../engineering/infrastructure.md#ビルドの設定) で決定）
