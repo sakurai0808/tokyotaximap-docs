@@ -13,7 +13,7 @@ import {
   type ArticleFrontMatter,
   type City,
 } from "./schema";
-import { z } from "zod";
+import { string, z } from "zod";
 
 // 記事ディレクトリを定義する
 const articlesDir = path.join(process.cwd(), "content/articles");
@@ -40,6 +40,7 @@ export type ArticleSummary = {
   title: string;
   category: string;
   updatedAt: string;
+  thumbnail: string;
 };
 
 // 記事を読み込み、型が合っていなければビルドを中止する。frontMatterの作成
@@ -68,17 +69,26 @@ function readArticleFile(slug: string) {
   return { frontMatter: result.data, content }; // 検証済みのデータに「frontMatter」という名前をつけて、本文(content)と一緒にオブジェクトとして返す
 }
 
+// front matterから、一覧用のデータ(ArticleSummary)を作る
+function toArticleSummary(
+  slug: string,
+  frontMatter: ArticleFrontMatter,
+): ArticleSummary {
+  return {
+    slug,
+    title: frontMatter.title,
+    category: frontMatter.category,
+    updatedAt: frontMatter.updatedAt,
+    thumbnail: frontMatter.thumbnail,
+  };
+}
+
 // 記事のスラッグ、タイトルを返す関数
 export function getArticleSummaries(): ArticleSummary[] {
   return getAllSlugs().map((slug) => {
     const { frontMatter } = readArticleFile(slug);
 
-    return {
-      slug,
-      title: frontMatter.title,
-      category: frontMatter.category,
-      updatedAt: frontMatter.updatedAt,
-    };
+    return toArticleSummary(slug, frontMatter);
   });
 }
 
@@ -186,7 +196,7 @@ export function getPinmapItems(): PinmapItem[] {
   return pinmapItemList;
 }
 
-// 区名を受け取って、ArticleSummary(L33付近)を返す
+// 区名を受け取って、ArticleSummaryを返す
 export function getArticleSummariesByCity(cityName: City): ArticleSummary[] {
   const articleSummariesByCity: ArticleSummary[] = [];
 
@@ -194,12 +204,7 @@ export function getArticleSummariesByCity(cityName: City): ArticleSummary[] {
     const { frontMatter } = readArticleFile(slug);
 
     if (frontMatter.city.includes(cityName)) {
-      articleSummariesByCity.push({
-        slug: frontMatter.slug,
-        title: frontMatter.title,
-        category: frontMatter.category,
-        updatedAt: frontMatter.updatedAt,
-      });
+      articleSummariesByCity.push(toArticleSummary(slug, frontMatter));
     }
   }
 
