@@ -82,27 +82,64 @@ function prepareHtml(
   images: Map<string, string>,
   gone: Set<number>,
   problems: Problems,
-): { html: string; youtube?: string; mapRemoved: number } {
+): { html: string; mapConverted: number; youtubeConverted: number; status?: string; abolishedAt?: string } {
   let html = post.content.rendered;
 
   // ブロックエディタのコメント（<!-- wp:paragraph --> など）を取り除く
   html = html.replace(/<!--[\s\S]*?-->/g, "");
 
-  // YouTubeの埋め込みは、動画IDだけを取り出して本文から外す（front matter の youtube に入れる）
-  let youtube: string | undefined;
+  // YouTubeの埋め込み（iframe）は、動画のURLを1行の段落にする（決めたこと 2026-11-25: 本文の位置に、URLを単独行で書く）
+  // 表示側が、このURLを埋め込みに変える。`<a>` で包むのは、Markdownの中で単独のリンクとして残すため
   const youtubeRe =
     /<iframe\b[^>]*\ssrc="(?:https?:)?\/\/(?:www\.)?(?:youtube\.com\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{11})[^"]*"[^>]*>[\s\S]*?<\/iframe>/gi;
-  const youtubeIds = [...html.matchAll(youtubeRe)].map((m) => m[1]);
-  if (youtubeIds.length > 1) {
-    problems.push(`${post.slug}: YouTubeの埋め込みが${youtubeIds.length}個ある（最初の1つだけ使った）`);
-  }
-  if (youtubeIds.length > 0) youtube = youtubeIds[0];
-  html = html.replace(youtubeRe, "");
+  const youtubeConverted = [...html.matchAll(youtubeRe)].length;
+  html = html.replace(youtubeRe, (_, id: string) => {
+    const url = `https://youtu.be/${id}`;
+    return `<p><a href="${url}">${url}</a></p>`;
+  });
 
-  // Googleマップの埋め込みは外す（地図は `## 地図(GoogleMap)` のプレースホルダにする。埋め込み方式は未決定）
-  const mapRe = /<iframe\b[^>]*\ssrc="[^"]*google\.com[^"]*"[^>]*>[\s\S]*?<\/iframe>/gi;
-  const mapRemoved = [...html.matchAll(mapRe)].length;
-  html = html.replace(mapRe, "");
+  // Googleマップの埋め込み（iframe）は、埋め込みURLを1行の段落にする（決めたこと 2026-11-25）
+  // 表示側が iframe に変える。WordPressの埋め込みは、すべて `https://www.google.com/maps/embed?pb=…` の形
+  const mapRe = /<iframe\b[^>]*\ssrc="([^"]*google\.com[^"]*)"[^>]*>[\s\S]*?<\/iframe>/gi;
+  const mapUrls = [...html.matchAll(mapRe)].map((m) => m[1]);
+  for (const url of mapUrls) {
+    // URLの中の空白（改行）は取り除く。URLには空白を入れられず、改行が入ると、リンクが壊れる
+    if (/\s/.test(url)) problems.push(`${post.slug}: 地図のURLに改行があったので取り除いた`);
+    const clean = url.replace(/\s+/g, "");
+    if (!clean.startsWith("https://www.google.com/maps/embed?pb=") || clean.includes("&")) {
+      problems.push(`${post.slug}: 地図の埋め込みURLの形が想定と違う（手で確認）: ${clean}`);
+    }
+  }
+  html = html.replace(mapRe, (_, url: string) => {
+    const clean = url.replace(/\s+/g, "");
+    return `<p><a href="${clean}">${clean}</a></p>`;
+  });
+  const mapConverted = mapUrls.length;
+
+  // 吹き出し（VK Blocks の balloon）のアイコン（サイトのロゴ）は、本文から外す
+  // 吹き出しの文は残す（引用ブロックに直すのは、別の作業）。ロゴは、どの記事にも同じ画像として入ってしまうため
+  html = html.replace(/<div class="vk_balloon_icon">[\s\S]*?<\/div>/g, "");
+
+  // 廃止された出入口の注意（VK Blocks の alert）は、本文から外し、front matter に書く
+  // 決め（2026-11-27）: status: 廃止、pinmap: false（ピンから外す）、abolishedAt: YYYY-MM（年月）。タイトルの【※廃止済み】は残す
+  let status: string | undefined;
+  let abolishedAt: string | undefined;
+  html = html.replace(/<div class="wp-block-vk-blocks-alert[^"]*">([\s\S]*?)<\/div>/g, (whole, inner: string) => {
+    const note = inner.replace(/<[^>]+>/g, "").trim();
+    if (!note.includes("廃止")) {
+      problems.push(`${post.slug}: 注意（alert）の文を、扱いを決められなかった（手で確認）: ${note}`);
+      return whole;
+    }
+    status = "廃止";
+    const ym = note.match(/(\d{4})年(\d{1,2})月/);
+    if (ym) {
+      abolishedAt = `${ym[1]}-${ym[2].padStart(2, "0")}`;
+    } else {
+      problems.push(`${post.slug}: 廃止の年月が読み取れなかった（abolishedAt を手で書く）: ${note}`);
+    }
+    problems.push(`${post.slug}: 注意の文を status: 廃止 に置き換えた（pinmap: false、abolishedAt: ${abolishedAt ?? "未入力"}）。元の文: ${note}`);
+    return "";
+  });
 
   // 外したあとに残っているiframeは、人が確かめる
   const iframeLeft = (html.match(/<iframe\b/gi) ?? []).length;
@@ -114,6 +151,11 @@ function prepareHtml(
   html = html.replace(/<img\b[^>]*>/g, (tag) => {
     // リンクカードのサムネイルと、ファビコンは取り除く（リンクの文字は残る）
     if (isLinkCardImage(tag)) return "";
+
+    // alt が空の画像は、記事ごとに埋める（確認の一覧に出す。決めたこと 2026-11-25）
+    if (!/\salt="[^"]+"/.test(tag)) {
+      problems.push(`${post.slug}: 画像のalt が空（記事ごとに埋める）: ${imgSrc(tag) ?? "(src なし)"}`);
+    }
 
     const id = wpImageId(tag);
     if (id !== undefined) {
@@ -152,7 +194,7 @@ function prepareHtml(
     problems.push(`${post.slug}: 内部リンクが残っている（手で確認）: ${link}`);
   }
 
-  return { html, youtube, mapRemoved };
+  return { html, mapConverted, youtubeConverted, status, abolishedAt };
 }
 
 // 5. 木の構造を使う部分: 目次（WordPressのプラグイン ez-toc）を、HTMLの木から取り除く
@@ -301,6 +343,53 @@ function fixEmphasisAfterPunct() {
   };
 }
 
+// 画像のキャプション（<figure> の <figcaption>）を、画像の title にする
+// Markdownでは ![alt](src "キャプション") になり、表示側が画像の下に出す（決めたこと 2026-11-25）
+// 画像が1枚の図だけを対象にする（WordPressの図は、すべて画像が1枚）。それ以外は、今までどおり
+function findAllByTag(node: HastNode, tag: string, found: HastNode[] = []): HastNode[] {
+  if (node.tagName === tag) found.push(node);
+  for (const child of node.children ?? []) findAllByTag(child, tag, found);
+  return found;
+}
+
+function captionFigures(node: HastNode): void {
+  if (!node.children) return;
+  node.children = node.children.map((child) => {
+    if (child.tagName === "figure") {
+      const imgs = findAllByTag(child, "img");
+      if (imgs.length === 1) {
+        const caption = findAllByTag(child, "figcaption")[0];
+        const text = caption ? textOf(caption).trim() : "";
+        const img = imgs[0];
+        if (text) img.properties = { ...img.properties, title: text };
+        // 画像だけを段落に入れる（拡大ボタンや、キャプションの段落は残さない）
+        return { type: "element", tagName: "p", properties: {}, children: [img] };
+      }
+    }
+    captionFigures(child);
+    return child;
+  });
+}
+
+function captionFiguresPlugin() {
+  return (tree: HastNode) => captionFigures(tree);
+}
+
+// WordPressの色付きの文字を、Markdownに直す（決めたこと 2026-11-25）
+// ・赤字（has-vivid-red-color）→ 太字（**…**）
+// ・青い文字（リンクの色）→ 色だけなので、記号を付けずに文字を残す。ここで強調にすると、リンクの前後に記号が残る
+// ・黄色マーカー（span.vk_highlighter）→ <mark>…</mark>（生のHTMLとして書く）
+const wordpressHandlers = {
+  mark(state: any, node: HastNode) {
+    if (hasClass(node, "has-vivid-red-color")) return { type: "strong", children: state.all(node) };
+    return state.all(node);
+  },
+  span(state: any, node: HastNode) {
+    if (!hasClass(node, "vk_highlighter")) return state.all(node);
+    return [{ type: "html", value: "<mark>" }, ...state.all(node), { type: "html", value: "</mark>" }];
+  },
+};
+
 // 6. HTMLをMarkdownに変換する（rehype-parse → 目次を外す → rehype-remark → remark-stringify）
 // rehype-parse: HTMLの文字 → HTMLの木（hast）
 // rehype-remark: HTMLの木 → Markdownの木（mdast）
@@ -314,14 +403,17 @@ async function htmlToMarkdown(
     .use(rehypeParse, { fragment: true })
     .use(removeTocPlugin, tocCounter)
     .use(removeLinkCardsPlugin, cardCounter)
-    .use(rehypeRemark)
+    .use(captionFiguresPlugin)
+    .use(rehypeRemark, { handlers: wordpressHandlers })
     .use(fixEmphasisAfterPunct)
     .use(remarkGfm)
     .use(remarkStringify)
     .process(html);
   // 地図の見出しは、プレースホルダの名前にそろえる（PoCの記事と同じ）
+  // 段落の字下げ（行頭の全角スペース）は、やめると決めたので消す（決めたこと 2026-11-25）
   return decodeSafeReferences(String(file).trim())
-    .replace(/^## (google|Google)マップ$/gm, "## 地図(GoogleMap)");
+    .replace(/^## (google|Google)マップ$/gm, "## 地図(GoogleMap)")
+    .replace(/^　+/gm, "");
 }
 
 // 7. front matter を組み立てる
@@ -330,7 +422,8 @@ async function htmlToMarkdown(
 function buildFrontMatter(
   post: WpPost,
   thumbnail: string | undefined,
-  youtube: string | undefined,
+  status: string | undefined,
+  abolishedAt: string | undefined,
 ): string {
   const lines = [
     "---",
@@ -343,11 +436,16 @@ function buildFrontMatter(
     "keywords:",
     "tags: []",
     `thumbnail: ${thumbnail ?? ""}`,
-    "pinmap:",
-    "location:",
-    "summary:",
   ];
-  if (youtube) lines.push(`youtube: ${youtube}`);
+  if (status) {
+    // 廃止の出入口は、ピンから外す（pinmap: false）。location・summary は要らないので書かない（2026-11-27決定）
+    lines.push("pinmap: false");
+    lines.push(`status: ${status}`);
+    // 年月は YYYY-MM。読み取れなければ空のまま（確認の一覧に出している）
+    lines.push(`abolishedAt: ${abolishedAt ?? ""}`);
+  } else {
+    lines.push("pinmap:", "location:", "summary:");
+  }
   lines.push("---");
   return lines.join("\n");
 }
@@ -362,7 +460,9 @@ async function main() {
   const tagCounts = new Map<string, number>(); // 本文に出てきたHTMLタグの数（対応の確認用）
   const tocCounter = { n: 0 };
   const cardCounter = { n: 0 };
-  let mapRemoved = 0;
+  let mapConverted = 0;
+  let youtubeConverted = 0;
+  let statusSet = 0;
   let written = 0;
 
   for (const post of posts) {
@@ -372,7 +472,9 @@ async function main() {
     }
 
     const prepared = prepareHtml(post, images, gone, problems);
-    mapRemoved += prepared.mapRemoved;
+    mapConverted += prepared.mapConverted;
+    youtubeConverted += prepared.youtubeConverted;
+    if (prepared.status) statusSet++;
     const body = await htmlToMarkdown(prepared.html, tocCounter, cardCounter);
 
     let thumbnail: string | undefined;
@@ -381,7 +483,7 @@ async function main() {
       if (!thumbnail) problems.push(`${post.slug}: 代表画像（ID ${post.featured_media}）が対応表にない`);
     }
 
-    const raw = `${buildFrontMatter(post, thumbnail, prepared.youtube)}\n\n${body}\n`;
+    const raw = `${buildFrontMatter(post, thumbnail, prepared.status, prepared.abolishedAt)}\n\n${body}\n`;
     // 整形（Prettier。既定の設定）。空行などを整える
     const text = await format(raw, { parser: "markdown" });
     fs.writeFileSync(`${OUT_DIR}/${post.slug}.md`, text);
@@ -391,7 +493,9 @@ async function main() {
   console.log(`記事: ${posts.length}本を取得、${written}本を書き出した（${OUT_DIR}/）`);
   console.log(`目次（ez-toc）を取り除いた要素: ${tocCounter.n}個`);
   console.log(`リンクカードの数（タイトルのリンクだけ残した）: ${cardCounter.n}個`);
-  console.log(`Googleマップの埋め込みを外した数: ${mapRemoved}個`);
+  console.log(`Googleマップの埋め込みURLを単独行にした数: ${mapConverted}個`);
+  console.log(`YouTubeの埋め込みURLを単独行にした数: ${youtubeConverted}個`);
+  console.log(`status: 廃止 にした記事: ${statusSet}本`);
   console.log(`WordPressで404の画像（削除した）: ${gone.size}種類（ID: ${[...gone].join(", ") || "なし"}）`);
   console.log(`\n本文に出てきたHTMLタグ（多い順）:`);
   for (const [tag, count] of [...tagCounts].sort((a, b) => b[1] - a[1])) {
