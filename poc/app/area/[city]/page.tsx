@@ -1,9 +1,9 @@
 // エリア名から記事一覧ページを作成する
 
 import { getArticleSummariesByCity } from "@/lib/articles";
+import ArticleCard from "@/app/components/ArticleCard";
 import { cities, cityPaths } from "@/lib/schema";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 
 type PageProps = {
   params: Promise<{ city: string }>;
@@ -32,15 +32,7 @@ export default async function CityPage({ params }: PageProps) {
       ) : (
         <div className="space-y-6">
           {articles.map((article) => (
-            <div key={article.slug}>
-              {/* .mapでjsxを並べたら必ずkeyを記述 */}
-              <Link href={`/${article.slug}/`} className="block">
-                {article.title}
-              </Link>
-              <span className="ml-2 text-sm text-zinc-500">
-                {article.category} ・ 更新 {article.updatedAt}
-              </span>
-            </div>
+            <ArticleCard key={article.slug} article={article} />
           ))}
         </div>
       )}

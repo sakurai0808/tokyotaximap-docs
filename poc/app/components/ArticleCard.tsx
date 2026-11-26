@@ -1,4 +1,5 @@
 // 一覧ページに表示する記事カードを作る
+// GenreBrowse.tsxで呼び出されたとき、すでにそのtsxがClient Componentになっているため、こちらにuse clientの記述は不要
 import Link from "next/link";
 import type { ArticleSummary } from "@/lib/articles";
 

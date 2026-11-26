@@ -3,8 +3,8 @@
 // ジャンルごとに一覧を表示させる
 
 import { ArticleSummary } from "@/lib/articles";
+import ArticleCard from "./ArticleCard";
 import type { Category } from "@/lib/schema";
-import Link from "next/link";
 import { useState } from "react";
 
 // ジャンル分け用のカテゴリ配列を作成
@@ -55,13 +55,7 @@ export default function GenreBrowse({
           <p>このジャンルの記事はまだありません。</p>
         ) : (
           visibleArticles.map((article) => (
-            <Link
-              key={article.slug}
-              href={`/${article.slug}/`}
-              className="block"
-            >
-              {article.title}
-            </Link>
+            <ArticleCard key={article.slug} article={article} />
           ))
         )}
       </div>
