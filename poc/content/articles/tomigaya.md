@@ -16,13 +16,13 @@ location:
 summary: 山手通りと井の頭通りの交差点です。
 ---
 
-## 交差する主な通り
-
-[山手通り](https://tokyotaximap.com/yamate-street-shibuya-meguro/)、[井の頭通り](https://tokyotaximap.com/inokashira-street-shibuya-setagaya/)
-
 ## 右左折について
 
 全方向で可能
+
+## 交差する主な通り
+
+[山手通り](/yamate-street-shibuya-meguro/)、[井の頭通り](/inokashira-street-shibuya-setagaya/)
 
 ## 基本事項
 
@@ -36,4 +36,4 @@ summary: 山手通りと井の頭通りの交差点です。
 
 交差点では全方向に右折レーンが設置されていて、Uターンができます。また、西(「大原」交差点)の方向から進んだ場合以外、信号の手前にUターン路が設置されています。
 
-## 地図
+## 地図(GoogleMap)

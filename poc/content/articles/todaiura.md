@@ -16,13 +16,13 @@ location:
 summary: 右左折は全方向で可能です。富ヶ谷の方向から進んだ場合はUターンが可能です。
 ---
 
-## 交差する主な通り
-
-[山手通り](/yamate-street-shibuya-meguro/)
-
 ## 右左折について
 
 全方向で可能
+
+## 交差する主な通り
+
+[山手通り](/yamate-street-shibuya-meguro/)
 
 ## 基本事項
 

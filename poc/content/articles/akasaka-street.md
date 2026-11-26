@@ -14,17 +14,17 @@ pinmap: false
 
 ## 基本事項
 
-**赤坂通り**は、日枝神社のある「山王下」交差点から青山のほうへ延びていき、恵比寿のあたりからは「[駒沢通り](https://tokyotaximap.com/komazawa-street-shibuya-meguro/)」と名前を変えます。
+**赤坂通り**は、日枝神社のある「山王下」交差点から青山のほうへ延びていき、恵比寿のあたりからは「[駒沢通り](/komazawa-street-shibuya-meguro/)」と名前を変えます。
 
-朝夕のラッシュ時や夜の時間帯は、[TBS](https://tokyotaximap.com/tbs/)のあたりはタクシーで混雑して進みにくくなります。
+朝夕のラッシュ時や夜の時間帯は、[TBS](/tbs/)のあたりはタクシーで混雑して進みにくくなります。
 
 | 交差点      | 交差する通り                                                   | 目印など                                                   |
 | ----------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
-| 山王下      | [外堀通り](https://tokyotaximap.com/sotobori-street_minatoku/) | 日枝神社                                                   |
-| ◯           |                                                                | [赤坂Bizタワー](https://tokyotaximap.com/akasakabiztower/) |
-| ◯           |                                                                | [TBS](https://tokyotaximap.com/tbs/)                       |
+| 山王下      | [外堀通り](/sotobori-street_minatoku/) | 日枝神社                                                   |
+| ◯           |                                                                | [赤坂Bizタワー](/akasakabiztower/) |
+| ◯           |                                                                | [TBS](/tbs/)                       |
 | ◯           |                                                                |                                                            |
-| 赤坂5交番前 | [コロンビア通り](https://tokyotaximap.com/columbia-street/)    | 交番                                                       |
+| 赤坂5交番前 | [コロンビア通り](/columbia-street/)    | 交番                                                       |
 
 ~~以下はいったん省略(テーブル内のコンテンツが多いため。本番ではこのような文言は使わない)~~
 

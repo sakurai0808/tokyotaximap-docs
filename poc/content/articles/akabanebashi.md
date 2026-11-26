@@ -20,7 +20,7 @@ summary: 日中は8~20時で右折禁止です。ただし愛宕下通りを新�
 
 8~20時でほとんどが右折禁止です。外苑東通りのバイパスを[日比谷通り](/hibiya-street_minatoku/)の方向から進んだ場合、[桜田通り](/sakurada-streetchiyodaminato/)、[愛宕下通り](/atagoshita-street/)どちらへも右折はできません。愛宕下通りを新橋方面から来る、または桜田通りを飯倉方向から来た場合、全方向へ進行することができます。
 
-## 交差する通り
+## 交差する主な通り
 
 [外苑東通り(バイパス)](/gaienhigashi-street-bypass/)、[桜田通り](/sakurada-streetchiyodaminato/)、[愛宕下通り](/atagoshita-street/)
 
