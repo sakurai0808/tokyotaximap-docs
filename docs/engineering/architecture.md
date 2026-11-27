@@ -322,8 +322,10 @@ URLの形を `/area/{英字}/` にした理由:
 - `poc/app/area/[city]/page.tsx`:
   - `generateStaticParams` は `Object.values(cityPaths).map((city) => ({ city }))`。返すオブジェクトのキーはフォルダ名 `[city]` と同じにする。返す型を `Promise<{ city: string }[]>` と書く。書かないと、`{ City: city }` のようにキーを違えても `tsc` はエラーにせず、devで開いたときに初めて「missing param」のエラーになる。書いておけば `tsc` のエラー（`TS2322`）で見つかる
   - URLの英字から区名に戻す（`cities.find((c) => city === cityPaths[c])`）。見つからなければ `notFound()`。`if` の後では `cityName` の型が `City | undefined` から `City` に絞り込まれるので、`getArticleSummariesByCity` に渡せる
-  - 記事が0本の区では「このエリアの記事はまだありません。」、それ以外はタイトルのリンク（`block`）＋カテゴリ・更新日。黒点付き箇条書きは使わない（2026-11-18。ジャンル一覧に寄せた）
-- `poc/app/page.tsx`: 上下順はピンマップ → ジャンル（`GenreBrowse`）→ エリアから探す。エリアは見出し＋6区のチップ型 `Link`（`` `/area/${cityPaths[c]}/` ``）。トップのメインに記事全件リストは置かない。区のページ・記事へのリンクは、`/` で始まり `/` で終わる形にそろえる
+  - 記事が0本の区では「このエリアの記事はまだありません。」、それ以外は`ArticleCard`を`space-y-6`で並べる（2026-11-27。それまではタイトルのリンク＋カテゴリ・更新日）。黒点付き箇条書きは使わない（2026-11-18。ジャンル一覧に寄せた）
+- `poc/lib/articles.ts`の`ArticleSummary`（一覧用）: `slug`・`title`・`category`・`updatedAt`・`thumbnail`。`toArticleSummary(slug, frontMatter)`で作り、`getArticleSummaries`と`getArticleSummariesByCity`の両方が使う（2026-11-27）
+- `poc/app/components/ArticleCard.tsx`（サーバーの部品。`"use client"`は不要）: `article: ArticleSummary`を受け取る。全体は`Link`（`flex flex-col`）。画像は`w-full`。文字の部分は`p-5`。タイトルは`text-xl font-bold mb-4`。日付（`time`。`dateTime`は`YYYY-MM-DD`、表示は`/`）とジャンル（`span`、`border px-4 py-2`）は`flex items-center justify-between`（2026-11-27）
+- `poc/app/page.tsx`: 上下順はピンマップ → ジャンル（`GenreBrowse`）→ エリアから探す。`main`は`space-y-[50px]`（セクションの間隔。px）。見出しは両方`text-center text-2xl mb-6 font-bold`（2026-11-27）。エリアは見出し＋6区のチップ型`Link`（`` `/area/${cityPaths[c]}/` ``）。トップのメインに記事全件リストは置かない。区のページ・記事へのリンクは、`/` で始まり `/` で終わる形にそろえる
 
 #### ジャンルから探す（トップ）
 
@@ -332,7 +334,7 @@ URLの形を `/area/{英字}/` にした理由:
 構成（PoC・2026-11-17〜18実装）:
 
 - `poc/app/page.tsx`（サーバー）: `getArticleSummaries()` を呼び、`<GenreBrowse articles={articles} />` に渡す（地図の次・エリアの前）
-- `poc/app/components/GenreBrowse.tsx`（`"use client"`）: 単語系7カテゴリのタブ（`genreCategories`）。選中は `useState`（初期値は先頭＝幹線道路）。`articles.filter` で一覧。0件時は文言を出す。見た目は `max-w-3xl`、タブは角なし枠（Figma寄せ。エリアチップの `rounded-2xl` との統一は後で可）、一覧は `space-y-[60px]`（Figmaの行間隔。サムネ無しだと広く見えやすい）
+- `poc/app/components/GenreBrowse.tsx`（`"use client"`）: 単語系7カテゴリのタブ（`genreCategories`）。選中は `useState`（初期値は先頭＝幹線道路）。`articles.filter` で一覧。0件時は文言を出す。見た目は `max-w-3xl`、タブは角なし枠（Figma寄せ。エリアチップの `rounded-2xl` との統一は後で可）、一覧は`ArticleCard`を`space-y-[60px]`で並べる（記事どうしの間隔。Figmaで測って60px。2026-11-27）。`key`は`map`の最外の要素である`ArticleCard`に付ける
 
 devとビルドの違い:
 
