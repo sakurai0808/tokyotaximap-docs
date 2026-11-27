@@ -13,14 +13,14 @@ export default function Home() {
   const articles = getArticleSummaries();
 
   return (
-    <main className="px-6 py-4">
+    <main className="px-6 py-4 space-y-[50px]">
       {/* ピンマップ */}
       <PinmapLoader items={pinmapItems} />
       {/* ジャンルから探す */}
       <GenreBrowse articles={articles} />
       {/* 「エリアから探す」 */}
       <div className="mx-auto max-w-3xl">
-        <h2>エリアから探す</h2>
+        <h2 className="text-center text-2xl mb-6 font-bold">エリアから探す</h2>
         <div className="flex flex-wrap gap-2">
           {cities.map((c) => (
             <Link
