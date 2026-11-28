@@ -6,7 +6,10 @@ import type { ArticleSummary } from "@/lib/articles";
 export default function ArticleCard({ article }: { article: ArticleSummary }) {
   const fixedUpdatedAt = article.updatedAt.replaceAll("-", "/"); // 実際の日付の表示は"-"を"/"に変換する
   return (
-    <Link href={`/${article.slug}/`} className="flex flex-col">
+    <Link
+      href={`/${article.slug}/`}
+      className="flex flex-col md:flex-row md:gap-[50px]"
+    >
       <img src={article.thumbnail} alt={article.title} className="w-full" />
       <div className="p-5">
         <h3 className="text-xl font-bold mb-4">{article.title}</h3>
