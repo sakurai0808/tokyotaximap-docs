@@ -33,7 +33,9 @@ export default function GenreBrowse({
 
   return (
     <div className="mx-auto max-w-[1052px]">
-      <h2 className="text-center text-2xl mb-6 font-bold">ジャンルから探す</h2>
+      <h2 className="text-center text-2xl mb-[1em] font-bold">
+        ジャンルから探す
+      </h2>
       {/* タブボタン列 */}
       <div className="flex flex-wrap gap-4 mb-[20px]">
         {genreCategories.map((c) => (
@@ -50,7 +52,7 @@ export default function GenreBrowse({
         ))}
       </div>
       {/* フィルターした記事一覧 */}
-      <div className="space-y-[60px] md:space-y-[30px]">
+      <div className="space-y-[24px] md:space-y-[30px]">
         {visibleArticles.length === 0 ? (
           <p>このジャンルの記事はまだありません。</p>
         ) : (
