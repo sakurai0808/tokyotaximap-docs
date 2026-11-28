@@ -32,7 +32,7 @@ export default function GenreBrowse({
   );
 
   return (
-    <div className="mx-auto max-w-[65.75rem]">
+    <div className="mx-auto max-w-[1052px]">
       <h2 className="text-center text-2xl mb-6 font-bold">ジャンルから探す</h2>
       {/* タブボタン列 */}
       <div className="flex flex-wrap gap-2 mb-[20px]">

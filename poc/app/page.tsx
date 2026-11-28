@@ -19,7 +19,7 @@ export default function Home() {
       {/* ジャンルから探す */}
       <GenreBrowse articles={articles} />
       {/* 「エリアから探す」 */}
-      <div className="mx-auto max-w-[65.75rem]">
+      <div className="mx-auto max-w-[1052px]">
         <h2 className="text-center text-2xl mb-6 font-bold">エリアから探す</h2>
         <div className="flex flex-wrap gap-2">
           {cities.map((c) => (

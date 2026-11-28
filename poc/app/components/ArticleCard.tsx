@@ -8,20 +8,24 @@ export default function ArticleCard({ article }: { article: ArticleSummary }) {
   return (
     <Link
       href={`/${article.slug}/`}
-      className="flex flex-col md:flex-row md:gap-[50px]"
+      className="flex flex-col md:items-center md:flex-row md:gap-[50px] md:pl-[30px] md:pr-[50px] md:py-[20px]"
     >
       <img
         src={article.thumbnail}
         alt={article.title}
-        className="w-full md:w-[200px] md:shrink-0"
+        className="w-full aspect-[200/142] object-cover md:w-[200px] md:shrink-0"
       />
-      <div className="p-5 md:flex-1 md:min-w-0">
-        <h3 className="text-xl font-bold mb-4">{article.title}</h3>
+      <div className="p-[20px] leading-[1.7] md:p-0 md:flex-1 md:min-w-0">
+        <h3 className="text-xl font-bold leading-[1.7] mb-[0.8em] md:mb-[1.8em]">
+          {article.title}
+        </h3>
         <div className="flex items-center justify-between">
-          <time dateTime={article.updatedAt} className="text-sm">
+          <time dateTime={article.updatedAt} className="text-sm leading-[1.7]">
             {fixedUpdatedAt}
           </time>
-          <span className="border px-4 py-2">{article.category}</span>
+          <span className="text-sm leading-[1.7] px-[1em] py-[0.5em] border">
+            {article.category}
+          </span>
         </div>
       </div>
     </Link>

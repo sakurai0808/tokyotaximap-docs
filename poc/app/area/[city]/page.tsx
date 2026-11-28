@@ -25,12 +25,12 @@ export default async function CityPage({ params }: PageProps) {
   const articles = getArticleSummariesByCity(cityName); // 記事の一覧を作成
 
   return (
-    <main className="mx-auto max-w-[65.75rem] px-6 py-12">
+    <main className="mx-auto max-w-[1052px] px-6 py-12">
       <h1 className="mb-6 text-2xl font-bold">{cityName}</h1>
       {articles.length === 0 ? (
         <p>このエリアの記事はまだありません。</p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-[24px]">
           {articles.map((article) => (
             <ArticleCard key={article.slug} article={article} />
           ))}
