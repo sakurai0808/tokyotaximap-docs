@@ -15,7 +15,7 @@ export default function ArticleCard({ article }: { article: ArticleSummary }) {
         alt={article.title}
         className="w-full md:w-[200px] md:shrink-0"
       />
-      <div className="p-5">
+      <div className="p-5 md:flex-1 md:min-w-0">
         <h3 className="text-xl font-bold mb-4">{article.title}</h3>
         <div className="flex items-center justify-between">
           <time dateTime={article.updatedAt} className="text-sm">
