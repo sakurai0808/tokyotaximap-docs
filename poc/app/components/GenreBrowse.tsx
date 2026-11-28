@@ -35,14 +35,14 @@ export default function GenreBrowse({
     <div className="mx-auto max-w-[1052px]">
       <h2 className="text-center text-2xl mb-6 font-bold">ジャンルから探す</h2>
       {/* タブボタン列 */}
-      <div className="flex flex-wrap gap-2 mb-[20px]">
+      <div className="flex flex-wrap gap-4 mb-[20px]">
         {genreCategories.map((c) => (
           <button
             key={c}
             type="button"
             aria-pressed={selectedCategory === c}
             onClick={() => setSelectedCategory(c)}
-            className={`cursor-pointer border border-zinc-300 px-3 py-1 text-xs inline-flex items-center gap-1
+            className={`cursor-pointer border border-zinc-300 px-[1em] py-[0.5em] text-base inline-flex items-center gap-1
               ${selectedCategory === c ? "font-bold underline" : ""}`}
           >
             {c}
