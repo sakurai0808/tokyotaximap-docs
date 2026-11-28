@@ -10,7 +10,11 @@ export default function ArticleCard({ article }: { article: ArticleSummary }) {
       href={`/${article.slug}/`}
       className="flex flex-col md:flex-row md:gap-[50px]"
     >
-      <img src={article.thumbnail} alt={article.title} className="w-full" />
+      <img
+        src={article.thumbnail}
+        alt={article.title}
+        className="w-full md:w-[200px] md:shrink-0"
+      />
       <div className="p-5">
         <h3 className="text-xl font-bold mb-4">{article.title}</h3>
         <div className="flex items-center justify-between">
